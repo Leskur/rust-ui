@@ -11,7 +11,7 @@ use crate::animation::{AnimationScheduler, Easing};
 use crate::color::Color;
 use crate::event::{Event, EventStatus, MouseButton};
 use crate::render::{Point, Rect, Renderer, TextOptions};
-use crate::style::Theme;
+use crate::style::{CursorStyle, Theme};
 use crate::widget::Widget;
 
 const TRACK_W: f32 = 40.0;
@@ -135,6 +135,10 @@ impl Widget for Switch {
             }
             _ => EventStatus::Ignored,
         }
+    }
+
+    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
+        if bounds.contains(pos.0, pos.1) { CursorStyle::Pointer } else { CursorStyle::Default }
     }
 }
 

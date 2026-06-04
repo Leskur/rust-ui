@@ -15,8 +15,8 @@ use winit::window::{Window, WindowId};
 
 use rust_ui::animation::AnimationScheduler;
 use rust_ui::event::Event as UiEvent;
-use rust_ui::render::Rect;
-use rust_ui::style::Theme;
+use rust_ui::render::{Point, Rect};
+use rust_ui::style::{CursorStyle, Theme};
 use rust_ui::widget::Widget;
 
 use crate::renderer::VelloRenderer;
@@ -32,13 +32,14 @@ pub fn run(
 ) {
     let event_loop = EventLoop::new().expect("Failed to create event loop");
     let mut app = App {
-        title:     title.to_string(),
+        title:      title.to_string(),
         width,
         height,
-        root:      Box::new(root),
+        root:       Box::new(root),
         theme,
-        scheduler: AnimationScheduler::new(),
-        state:     None,
+        scheduler:  AnimationScheduler::new(),
+        state:      None,
+        cursor_pos: Point::new(0.0, 0.0),
     };
     event_loop.run_app(&mut app).expect("Event loop failed");
 }
@@ -58,13 +59,14 @@ struct GpuState<'s> {
 // ── Application handler ───────────────────────────────────────────────────────
 
 struct App {
-    title:     String,
-    width:     u32,
-    height:    u32,
-    root:      Box<dyn Widget>,
-    theme:     Theme,
-    scheduler: AnimationScheduler,
-    state:     Option<GpuState<'static>>,
+    title:      String,
+    width:      u32,
+    height:     u32,
+    root:       Box<dyn Widget>,
+    theme:      Theme,
+    scheduler:  AnimationScheduler,
+    state:      Option<GpuState<'static>>,
+    cursor_pos: Point,
 }
 
 impl ApplicationHandler for App {
@@ -140,11 +142,15 @@ impl ApplicationHandler for App {
             }
 
             WindowEvent::CursorMoved { position, .. } => {
-                let ui_event = UiEvent::MouseMove {
-                    pos: rust_ui::render::Point::new(position.x as f32, position.y as f32),
-                };
+                let pos = Point::new(position.x as f32, position.y as f32);
+                self.cursor_pos = pos;
+                let ui_event = UiEvent::MouseMove { pos };
                 let bounds = Rect::new(0.0, 0.0, state.width as f32, state.height as f32);
                 self.root.handle_event(&ui_event, bounds);
+
+                // Update OS cursor based on widget under pointer
+                let cursor = self.root.cursor_at((pos.x, pos.y), bounds);
+                state.window.set_cursor(to_winit_cursor(cursor));
                 state.window.request_redraw();
             }
 
@@ -156,8 +162,7 @@ impl ApplicationHandler for App {
                     MouseButton::Middle => rust_ui::event::MouseButton::Middle,
                     _                   => return,
                 };
-                // We'd need to track cursor pos here; simplified for now
-                let pos = rust_ui::render::Point::new(0.0, 0.0);
+                let pos = self.cursor_pos;
                 let ui_event = match btn_state {
                     ElementState::Pressed  => UiEvent::MouseDown { pos, button: rb },
                     ElementState::Released => UiEvent::MouseUp   { pos, button: rb },
@@ -246,5 +251,17 @@ impl App {
 
         surface_texture.present();
         device_handle.device.poll(vello::wgpu::Maintain::Poll);
+    }
+}
+
+fn to_winit_cursor(c: CursorStyle) -> winit::window::CursorIcon {
+    use winit::window::CursorIcon;
+    match c {
+        CursorStyle::Default    => CursorIcon::Default,
+        CursorStyle::Pointer    => CursorIcon::Pointer,
+        CursorStyle::Text       => CursorIcon::Text,
+        CursorStyle::NotAllowed => CursorIcon::NotAllowed,
+        CursorStyle::Grab       => CursorIcon::Grab,
+        CursorStyle::Crosshair  => CursorIcon::Crosshair,
     }
 }

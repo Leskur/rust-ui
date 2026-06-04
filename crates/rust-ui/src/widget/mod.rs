@@ -23,7 +23,7 @@ pub use text::{text, Text};
 
 use crate::event::{Event, EventStatus};
 use crate::render::{Rect, Renderer};
-use crate::style::Theme;
+use crate::style::{CursorStyle, Theme};
 
 /// The core widget trait.
 ///
@@ -44,4 +44,10 @@ pub trait Widget {
 
     /// Whether this widget is a container with children.
     fn is_container(&self) -> bool { false }
+
+    /// Return the cursor style when the pointer is at `pos` over `bounds`.
+    /// The window loop calls this on every MouseMove to update the OS cursor.
+    fn cursor_at(&self, _pos: (f32, f32), _bounds: Rect) -> CursorStyle {
+        CursorStyle::Default
+    }
 }

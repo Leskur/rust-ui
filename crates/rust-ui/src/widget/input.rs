@@ -1,9 +1,8 @@
 //! Text input widget.
 
-use crate::color::Color;
 use crate::event::{Event, EventStatus, Key, MouseButton};
 use crate::render::{Point, Rect, Renderer, TextOptions};
-use crate::style::{Corners, Theme};
+use crate::style::{Corners, CursorStyle, Theme};
 use crate::widget::Widget;
 
 pub struct Input {
@@ -123,6 +122,10 @@ impl Widget for Input {
             }
             _ => EventStatus::Ignored,
         }
+    }
+
+    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
+        if bounds.contains(pos.0, pos.1) { CursorStyle::Text } else { CursorStyle::Default }
     }
 }
 
