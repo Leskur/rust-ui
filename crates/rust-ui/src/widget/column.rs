@@ -2,7 +2,7 @@
 
 use crate::event::{Event, EventStatus};
 use crate::render::{Rect, Renderer};
-use crate::style::Theme;
+use crate::style::{CursorStyle, Theme};
 use crate::widget::Widget;
 
 /// Vertical arrangement of widgets.
@@ -39,50 +39,73 @@ impl Column {
     pub fn padding(mut self, p: f32) -> Self { self.padding = p; self }
 }
 
+impl Column {
+    fn child_rects(&self, bounds: Rect, theme: &Theme) -> Vec<Rect> {
+        let inner_x = bounds.x + self.padding;
+        let inner_y = bounds.y + self.padding;
+        let inner_w = bounds.width - self.padding * 2.0;
+        let mut y = inner_y;
+        let mut rects = Vec::with_capacity(self.children.len());
+        for child in &self.children {
+            let (_, h) = child.intrinsic_size(theme);
+            rects.push(Rect::new(inner_x, y, inner_w, h));
+            y += h + self.spacing;
+        }
+        rects
+    }
+}
+
 impl Widget for Column {
     fn id(&self) -> &str { &self.id }
     fn is_container(&self) -> bool { true }
 
-    fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
-        let inner = Rect::new(
-            bounds.x + self.padding,
-            bounds.y + self.padding,
-            bounds.width  - self.padding * 2.0,
-            bounds.height - self.padding * 2.0,
+    fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
+        let rects = self.child_rects(
+            Rect::new(0.0, 0.0, 10000.0, 10000.0),
+            theme,
         );
+        let w = rects.iter().map(|r| r.width).fold(0.0_f32, f32::max);
+        let h = rects.last().map(|r| r.y + r.height - self.padding).unwrap_or(0.0);
+        (w + self.padding * 2.0, h + self.padding)
+    }
 
-        let n = self.children.len() as f32;
-        if n == 0.0 { return; }
-        let total_spacing = self.spacing * (n - 1.0);
-        let child_h = (inner.height - total_spacing) / n;
-
-        let mut y = inner.y;
-        for child in &self.children {
-            let cb = Rect::new(inner.x, y, inner.width, child_h);
-            child.draw(renderer, cb, theme);
-            y += child_h + self.spacing;
+    fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
+        let rects = self.child_rects(bounds, theme);
+        for (child, cb) in self.children.iter().zip(rects.iter()) {
+            child.draw(renderer, *cb, theme);
         }
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
-        let inner = Rect::new(
-            bounds.x + self.padding,
-            bounds.y + self.padding,
-            bounds.width  - self.padding * 2.0,
-            bounds.height - self.padding * 2.0,
+        let theme = Theme::default();
+        let rects = self.child_rects(bounds, &theme);
+        // Mouse events must be broadcast to ALL children so every widget can
+        // update its own hover/focus state (e.g. an Input unfocuses itself when
+        // clicked outside). Keyboard events stop at the first consumer.
+        let broadcast = matches!(
+            event,
+            Event::MouseMove { .. } | Event::MouseDown { .. } | Event::MouseUp { .. }
         );
-        let n = self.children.len() as f32;
-        if n == 0.0 { return EventStatus::Ignored; }
-        let child_h = (inner.height - self.spacing * (n - 1.0)) / n;
-        let mut y = inner.y;
-        for child in &mut self.children {
-            let cb = Rect::new(inner.x, y, inner.width, child_h);
-            if child.handle_event(event, cb) == EventStatus::Consumed {
-                return EventStatus::Consumed;
+        let mut result = EventStatus::Ignored;
+        for (child, cb) in self.children.iter_mut().zip(rects.iter()) {
+            let s = child.handle_event(event, *cb);
+            if s == EventStatus::Consumed {
+                result = EventStatus::Consumed;
+                if !broadcast { return EventStatus::Consumed; }
             }
-            y += child_h + self.spacing;
         }
-        EventStatus::Ignored
+        result
+    }
+
+    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
+        let theme = Theme::default();
+        let rects = self.child_rects(bounds, &theme);
+        for (child, cb) in self.children.iter().zip(rects.iter()) {
+            if cb.contains(pos.0, pos.1) {
+                return child.cursor_at(pos, *cb);
+            }
+        }
+        CursorStyle::Default
     }
 }
 

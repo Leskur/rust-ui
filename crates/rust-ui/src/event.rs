@@ -51,6 +51,8 @@ pub enum Event {
     KeyDown { key: Key, modifiers: Modifiers },
     KeyUp   { key: Key, modifiers: Modifiers },
     TextInput { text: String },
+    /// IME preedit text changed. Empty text means preedit was cancelled.
+    ImePreedit { text: String, cursor: Option<(usize, usize)> },
 
     // ── Focus ────────────────────────────────────────────────────────────────
     FocusGained,

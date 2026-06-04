@@ -130,8 +130,7 @@ impl<'a> Renderer for VelloRenderer<'a> {
 
     fn draw_text(&mut self, text: &str, pos: Point, opts: &TextOptions) -> (f32, f32) {
         let pos = self.offset_point(pos);
-        let pixels = self.text_engine.rasterize(text, opts.font_size, opts.color, opts.max_width);
-        let (w, h) = self.text_engine.measure(text, opts.font_size, opts.max_width);
+        let (pixels, w, h, _ascent) = self.text_engine.rasterize(text, opts.font_size, opts.color, opts.max_width);
 
         // Draw each glyph pixel as a tiny filled rectangle (1×1)
         // This is the simplest correct approach; a production impl would
@@ -156,12 +155,15 @@ impl<'a> Renderer for VelloRenderer<'a> {
         (w, h)
     }
 
-    fn measure_text(&self, text: &str, opts: &TextOptions) -> (f32, f32) {
+    fn measure_text(&self, text: &str, opts: &TextOptions) -> (f32, f32, f32) {
         // We need &mut self for cosmic-text but trait says &self.
-        // Cache results to avoid the mismatch; for now return an approximation.
+        // For now return an approximation; in production, cache results.
         let char_w = opts.font_size * 0.6;
         let w = text.chars().count() as f32 * char_w;
-        (w.min(opts.max_width.unwrap_or(f32::MAX)), opts.font_size)
+        let h = opts.font_size;
+        // Approximate ascent as 80% of font size (typical for many fonts)
+        let ascent = opts.font_size * 0.8;
+        (w.min(opts.max_width.unwrap_or(f32::MAX)), h, ascent)
     }
 
     fn push_clip(&mut self, rect: Rect) {

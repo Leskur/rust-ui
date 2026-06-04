@@ -35,62 +35,24 @@ let ui = column![
 rust_ui_wgpu::run("我的应用", 800, 600, ui, Theme::dark());
 ```
 
-## 样式系统
+运行交互式 showcase：
 
-灵感来自 shadcn/ui — 样式是你拥有和组合的普通值。
-
-```rust
-use rust_ui::style::Style;
-use rust_ui::color::Color;
-
-// 定义可复用的样式（类似 CSS class）
-let card = Style::new()
-    .bg(Color::hex("#1e2130"))
-    .radius(12.0)
-    .padding(16.0)
-    .border_color(Color::hex("#2a2d3e"))
-    .border_width(1.0);
-
-// 派生变体 — merge() 就像 CSS 覆盖
-let active_card = card.clone().border_color(Color::hex("#5c7cfa"));
+```bash
+cargo run -p showcase
 ```
 
-## 主题系统
+## 截图
 
-```rust
-use rust_ui::style::Theme;
+![Button 组件](screenshots/button.png)
 
-let theme = Theme::dark();   // VS Code 风格深色主题
-let theme = Theme::light();  // 简洁浅色主题
-```
+![Input 组件](screenshots/input.png)
 
-所有颜色、间距、圆角都通过 `Theme` 的语义 token 统一管理：
+![Switch 组件](screenshots/switch.png)
 
-```rust
-theme.accent      // 强调色
-theme.fg          // 主文字色
-theme.fg_muted    // 次要文字色
-theme.bg_surface  // 卡片/面板背景
-theme.border      // 边框颜色
-// ...
-```
+## 文档
 
-## 动画系统
-
-`AnimationScheduler` 拥有所有活跃的补间动画。**Widget 本身不管时间。**
-
-```rust
-// 在事件处理器中触发动画：
-scheduler.animate_to("my-switch", "progress", 1.0, Easing::EaseOut, 0.18);
-
-// 运行时每帧调用一次：
-scheduler.tick(dt);
-
-// Widget 在 draw() 中读取当前值：
-let p = scheduler.get("my-switch", "progress").unwrap_or(0.0);
-```
-
-> 这解决了 iced 等库的动画卡顿问题 — 动画状态集中管理，每帧主动推进，而不是被动等事件触发。
+- [组件文档](docs/components/) — Button、Input、Switch 等
+- [指南](docs/guides/) — 主题定制、动画系统、布局
 
 ## 架构
 
@@ -105,7 +67,7 @@ rust-ui               核心库 — 零 GPU 依赖
   └── widget
         ├── Button    Primary / Secondary / Danger / Ghost 变体
         ├── Text      大小、颜色、粗体、字体族
-        ├── Input     文字输入框，带 placeholder 和光标
+        ├── Input     HTML 风格编辑：光标、选区、剪贴板、IME、滚动
         ├── Switch    带动画的开关
         ├── Row       水平 flex 容器
         ├── Column    垂直 flex 容器

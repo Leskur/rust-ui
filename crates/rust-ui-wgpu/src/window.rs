@@ -9,8 +9,9 @@ use vello::util::{RenderContext, RenderSurface};
 use vello::{AaConfig, Renderer, RendererOptions, Scene};
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
-use winit::event::WindowEvent;
+use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
+use winit::keyboard::{Key as WinitKey, NamedKey};
 use winit::window::{Window, WindowId};
 
 use rust_ui::animation::AnimationScheduler;
@@ -40,6 +41,7 @@ pub fn run(
         scheduler:  AnimationScheduler::new(),
         state:      None,
         cursor_pos: Point::new(0.0, 0.0),
+        modifiers:  winit::event::Modifiers::default(),
     };
     event_loop.run_app(&mut app).expect("Event loop failed");
 }
@@ -67,6 +69,7 @@ struct App {
     scheduler:  AnimationScheduler,
     state:      Option<GpuState<'static>>,
     cursor_pos: Point,
+    modifiers:  winit::event::Modifiers,
 }
 
 impl ApplicationHandler for App {
@@ -107,6 +110,9 @@ impl ApplicationHandler for App {
         .expect("Failed to create vello renderer");
 
         let text = TextEngine::new();
+
+        // Enable IME so the OS input method (e.g. Chinese/Japanese) can compose text.
+        window.set_ime_allowed(true);
 
         // SAFETY: we keep window alive in GpuState for the lifetime of the app.
         let state: GpuState<'static> = unsafe {
@@ -154,8 +160,82 @@ impl ApplicationHandler for App {
                 state.window.request_redraw();
             }
 
+            WindowEvent::ModifiersChanged(mods) => {
+                self.modifiers = mods;
+            }
+
+            // IME composition: preedit text update and final commit
+            WindowEvent::Ime(ime) => {
+                use winit::event::Ime;
+                let bounds = Rect::new(0.0, 0.0, state.width as f32, state.height as f32);
+                match ime {
+                    Ime::Commit(text) => {
+                        self.root.handle_event(&UiEvent::TextInput { text }, bounds);
+                        state.window.request_redraw();
+                    }
+                    Ime::Preedit(text, cursor) => {
+                        self.root.handle_event(&UiEvent::ImePreedit { text, cursor }, bounds);
+                        state.window.request_redraw();
+                    }
+                    _ => {}
+                }
+            }
+
+            WindowEvent::KeyboardInput { event, .. } => {
+                use rust_ui::event::{Key, Modifiers};
+                if event.state != ElementState::Pressed { return; }
+                let bounds = Rect::new(0.0, 0.0, state.width as f32, state.height as f32);
+                let m = self.modifiers.state();
+                let modifiers = Modifiers {
+                    ctrl:  m.control_key(),
+                    shift: m.shift_key(),
+                    alt:   m.alt_key(),
+                    meta:  m.super_key(),
+                };
+
+                // Special named keys → KeyDown
+                let ui_key = match &event.logical_key {
+                    WinitKey::Named(NamedKey::Backspace)  => Some(Key::Backspace),
+                    WinitKey::Named(NamedKey::Delete)     => Some(Key::Delete),
+                    WinitKey::Named(NamedKey::Enter)      => Some(Key::Enter),
+                    WinitKey::Named(NamedKey::Escape)     => Some(Key::Escape),
+                    WinitKey::Named(NamedKey::Tab)        => Some(Key::Tab),
+                    WinitKey::Named(NamedKey::ArrowUp)    => Some(Key::ArrowUp),
+                    WinitKey::Named(NamedKey::ArrowDown)  => Some(Key::ArrowDown),
+                    WinitKey::Named(NamedKey::ArrowLeft)  => Some(Key::ArrowLeft),
+                    WinitKey::Named(NamedKey::ArrowRight) => Some(Key::ArrowRight),
+                    WinitKey::Named(NamedKey::Home)       => Some(Key::Home),
+                    WinitKey::Named(NamedKey::End)        => Some(Key::End),
+                    _ => None,
+                };
+                if let Some(key) = ui_key {
+                    self.root.handle_event(&UiEvent::KeyDown { key, modifiers }, bounds);
+                    state.window.request_redraw();
+                    return;
+                }
+                // Ctrl/Meta + char key → KeyDown (shortcuts like Ctrl+A)
+                if modifiers.ctrl || modifiers.meta {
+                    if let WinitKey::Character(s) = &event.logical_key {
+                        if let Some(c) = s.chars().next() {
+                            let key = Key::Char(c.to_ascii_lowercase());
+                            self.root.handle_event(&UiEvent::KeyDown { key, modifiers }, bounds);
+                            state.window.request_redraw();
+                        }
+                    }
+                    return;
+                }
+                // Regular printable text — skip control characters
+                if let Some(text) = event.text.as_ref() {
+                    let s = text.to_string();
+                    if s.chars().all(|c| !c.is_control()) && !s.is_empty() {
+                        self.root.handle_event(&UiEvent::TextInput { text: s }, bounds);
+                        state.window.request_redraw();
+                    }
+                }
+            }
+
             WindowEvent::MouseInput { state: btn_state, button, .. } => {
-                use winit::event::{ElementState, MouseButton};
+                use winit::event::MouseButton;
                 let rb = match button {
                     MouseButton::Left   => rust_ui::event::MouseButton::Left,
                     MouseButton::Right  => rust_ui::event::MouseButton::Right,

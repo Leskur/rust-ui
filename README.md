@@ -35,49 +35,24 @@ let ui = column![
 rust_ui_wgpu::run("My App", 800, 600, ui, Theme::dark());
 ```
 
-## Style system
+Run the interactive showcase:
 
-Inspired by shadcn/ui — styles are plain values you own and compose.
-
-```rust
-use rust_ui::style::Style;
-use rust_ui::color::Color;
-
-// Define a reusable style (like a CSS class)
-let card = Style::new()
-    .bg(Color::hex("#1e2130"))
-    .radius(12.0)
-    .padding(16.0)
-    .border_color(Color::hex("#2a2d3e"))
-    .border_width(1.0);
-
-// Derive a variant — merge() works like CSS specificity
-let active_card = card.clone().border_color(Color::hex("#5c7cfa"));
+```bash
+cargo run -p showcase
 ```
 
-## Theming
+## Screenshots
 
-```rust
-use rust_ui::style::Theme;
+![Button Widget](screenshots/button.png)
 
-let theme = Theme::dark();   // VS Code-inspired dark
-let theme = Theme::light();  // Clean light theme
-```
+![Input Widget](screenshots/input.png)
 
-## Animation
+![Switch Widget](screenshots/switch.png)
 
-The `AnimationScheduler` owns all active tweens. Widgets never manage time.
+## Documentation
 
-```rust
-// Trigger from event handler:
-scheduler.animate_to("my-switch", "progress", 1.0, Easing::EaseOut, 0.18);
-
-// Runtime calls once per frame:
-scheduler.tick(dt);
-
-// Widget reads current value:
-let p = scheduler.get("my-switch", "progress").unwrap_or(0.0);
-```
+- [Components](docs/components/) — Button, Input, Switch, and more
+- [Guides](docs/guides/) — Theming, Animation, Layout
 
 ## Architecture
 
@@ -92,7 +67,7 @@ rust-ui               core library — zero GPU dependencies
   └── widget
         ├── Button    Primary / Secondary / Danger / Ghost variants
         ├── Text      size, color, bold, font family
-        ├── Input     text input with placeholder + cursor
+        ├── Input     HTML-like editing: cursor, selection, clipboard, IME, scroll
         ├── Switch    animated toggle
         ├── Row       horizontal flex container
         ├── Column    vertical flex container

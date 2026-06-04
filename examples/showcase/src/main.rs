@@ -7,30 +7,58 @@
 //! cargo run -p showcase
 //! ```
 
+mod pages;
+
 use rust_ui::prelude::*;
-use rust_ui::widget::button::ButtonVariant;
 use rust_ui::widget::{
-    button, container, input, sidebar, sidebar_group, sidebar_item, switch, text,
+    container, sidebar, sidebar_group, sidebar_item, tab_view, Widget,
 };
+use rust_ui::widget::TabView;
+use rust_ui::event::{Event, EventStatus};
+use rust_ui::render::{Rect, Renderer};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 fn main() {
     let theme = Theme::dark();
 
+    // ── Content pages ─────────────────────────────────────────────────────────
+    let tabs = Rc::new(RefCell::new(tab_view(vec![
+        ("Overview".to_string(),  pages::overview::page()),
+        ("Button".to_string(),    pages::button::page()),
+        ("Input".to_string(),     pages::input::page()),
+        ("Switch".to_string(),    pages::switch::page()),
+        ("Container".to_string(), pages::container::page()),
+    ]).active("Button")));
+
+    // Thin wrapper so Rc<RefCell<TabView>> can be used as a Widget
+    struct TabViewWrapper {
+        id:    String,
+        inner: Rc<RefCell<TabView>>,
+    }
+    impl Widget for TabViewWrapper {
+        fn id(&self) -> &str { &self.id }
+        fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
+            self.inner.borrow().draw(renderer, bounds, theme);
+        }
+        fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
+            self.inner.borrow_mut().handle_event(event, bounds)
+        }
+        fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
+            self.inner.borrow().intrinsic_size(theme)
+        }
+    }
+
     // ── Sidebar ───────────────────────────────────────────────────────────────
     let nav = sidebar(vec![
-        sidebar_group(
-            "rust-ui",
-            vec![sidebar_item("Overview")],
-        ),
+        sidebar_group("rust-ui", vec![sidebar_item("Overview")]),
         sidebar_group(
             "Components",
             vec![
                 sidebar_item("Button"),
-                sidebar_item("Text"),
                 sidebar_item("Input"),
                 sidebar_item("Switch"),
                 sidebar_item("Container"),
-                sidebar_item("Row & Column"),
             ],
         ),
         sidebar_group(
@@ -47,116 +75,18 @@ fn main() {
         ),
     ])
     .width(220.0)
-    .active("Button");
+    .active("Button")
+    .on_select({
+        let tabs = tabs.clone();
+        move |name: &str| { tabs.borrow_mut().set_active(name); }
+    });
 
-    // ── Content panels ────────────────────────────────────────────────────────
-
-    // Button demo
-    let button_demo = rust_ui::column![
-        text("Button").size(22.0).bold(),
-        text("Four semantic variants, hover and press states built in.")
-            .size(13.0)
-            .color(Color::hex("#8b8fa8")),
-        // Variants row
-        rust_ui::row![
-            button("Primary").variant(ButtonVariant::Primary),
-            button("Secondary").variant(ButtonVariant::Secondary),
-            button("Danger").variant(ButtonVariant::Danger),
-            button("Ghost").variant(ButtonVariant::Ghost),
-        ]
-        .spacing(8.0),
-        // Disabled
-        text("Disabled").size(13.0).color(Color::hex("#555870")),
-        rust_ui::row![
-            button("Disabled").variant(ButtonVariant::Primary).disabled(true),
-            button("Disabled").variant(ButtonVariant::Secondary).disabled(true),
-        ]
-        .spacing(8.0),
-    ]
-    .spacing(16.0);
-
-    // Switch demo
-    let switch_demo = rust_ui::column![
-        text("Switch").size(22.0).bold(),
-        text("Animated toggle with on/off state.")
-            .size(13.0)
-            .color(Color::hex("#8b8fa8")),
-        switch("System Proxy", true),
-        switch("Dark Mode", false),
-        switch("Notifications", true),
-    ]
-    .spacing(16.0);
-
-    // Input demo
-    let input_demo = rust_ui::column![
-        text("Input").size(22.0).bold(),
-        text("Text input with placeholder and keyboard support.")
-            .size(13.0)
-            .color(Color::hex("#8b8fa8")),
-        input("").placeholder("Search components…"),
-        input("").placeholder("Enter your email"),
-    ]
-    .spacing(16.0);
-
-    // Overview
-    let overview = rust_ui::column![
-        text("rust-ui").size(28.0).bold(),
-        text("A beautiful, frontend-friendly UI library for Rust.")
-            .size(15.0)
-            .color(Color::hex("#8b8fa8")),
-        rust_ui::row![
-            container(
-                rust_ui::column![
-                    text("7").size(32.0).bold().color(Color::hex("#5c7cfa")),
-                    text("Widgets").size(13.0).color(Color::hex("#8b8fa8")),
-                ].spacing(4.0)
-            )
-            .bg(Color::hex("#161820"))
-            .radius(12.0)
-            .padding(20.0)
-            .border(Color::hex("#2a2d3e"), 1.0),
-
-            container(
-                rust_ui::column![
-                    text("wgpu").size(18.0).bold().color(Color::hex("#4fc08d")),
-                    text("Renderer").size(13.0).color(Color::hex("#8b8fa8")),
-                ].spacing(4.0)
-            )
-            .bg(Color::hex("#161820"))
-            .radius(12.0)
-            .padding(20.0)
-            .border(Color::hex("#2a2d3e"), 1.0),
-
-            container(
-                rust_ui::column![
-                    text("vello").size(18.0).bold().color(Color::hex("#fbbf24")),
-                    text("Vector").size(13.0).color(Color::hex("#8b8fa8")),
-                ].spacing(4.0)
-            )
-            .bg(Color::hex("#161820"))
-            .radius(12.0)
-            .padding(20.0)
-            .border(Color::hex("#2a2d3e"), 1.0),
-        ]
-        .spacing(12.0),
-    ]
-    .spacing(20.0);
-
-    // ── Layout: sidebar + content ─────────────────────────────────────────────
-    //
-    // We use Row: left = Sidebar, right = content panel.
-    // (Real routing will come with the Store/dispatch system.)
-    //
-    let content = container(
-        rust_ui::column![
-            // Show button_demo as default selected content
-            button_demo,
-        ]
-        .spacing(0.0)
-    )
-    .padding(32.0);
+    // ── Layout ────────────────────────────────────────────────────────────────
+    let content = container(TabViewWrapper {
+        id:    "tab-view-wrapper".to_string(),
+        inner: tabs,
+    }).padding(32.0);
 
     let root = rust_ui::row![nav, content].spacing(0.0);
-
-    rust_ui_wgpu::run("rust-ui Showcase", 1024, 680, root, theme);
+    rust_ui_wgpu::run("rust-ui Showcase", 1100, 720, root, theme);
 }

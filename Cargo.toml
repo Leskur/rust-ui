@@ -3,8 +3,6 @@ resolver = "2"
 members = [
     "crates/rust-ui",
     "crates/rust-ui-wgpu",
-    "examples/counter",
-    "examples/gallery",
     "examples/showcase",
 ]
 

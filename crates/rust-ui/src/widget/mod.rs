@@ -10,15 +10,17 @@ pub mod input;
 pub mod row;
 pub mod sidebar;
 pub mod switch;
+pub mod tab_view;
 pub mod text;
 
 pub use button::{button, Button};
 pub use column::{column, Column};
 pub use container::{container, Container};
-pub use input::{input, Input};
+pub use input::{input, Input, InputSize};
 pub use row::{row, Row};
 pub use sidebar::{sidebar, sidebar_group, sidebar_item, Sidebar, SidebarGroup, SidebarItem};
 pub use switch::{switch, Switch};
+pub use tab_view::{tab_view, TabView};
 pub use text::{text, Text};
 
 use crate::event::{Event, EventStatus};
@@ -44,6 +46,12 @@ pub trait Widget {
 
     /// Whether this widget is a container with children.
     fn is_container(&self) -> bool { false }
+
+    /// Natural (width, height) in logical pixels when unconstrained.
+    /// Used by Row/Column to size children without a full layout pass.
+    fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
+        (120.0, 36.0) // sensible default
+    }
 
     /// Return the cursor style when the pointer is at `pos` over `bounds`.
     /// The window loop calls this on every MouseMove to update the OS cursor.

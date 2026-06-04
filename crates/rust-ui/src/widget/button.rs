@@ -160,8 +160,9 @@ impl Widget for Button {
             color: fg,
             ..Default::default()
         };
-        let (tw, th) = renderer.measure_text(display_label, &opts);
-        let tx = bounds.x + (bounds.width  - tw) / 2.0;
+        let (tw, th, _ascent) = renderer.measure_text(display_label, &opts);
+        // Standard vertical center: place text bounding box in the middle of the button
+        let tx = bounds.x + (bounds.width - tw) / 2.0;
         let ty = bounds.y + (bounds.height - th) / 2.0;
         renderer.draw_text(display_label, Point::new(tx, ty), &opts);
     }
@@ -198,6 +199,15 @@ impl Widget for Button {
             }
             _ => EventStatus::Ignored,
         }
+    }
+
+    fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
+        let (hp, vp, fs) = self.size_metrics(theme);
+        let char_w = fs * 0.6;
+        let text_w = self.label.chars().count() as f32 * char_w;
+        let w = (text_w + hp * 2.0).max(60.0);
+        let h = fs + vp * 2.0;
+        (w, h)
     }
 
     fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {

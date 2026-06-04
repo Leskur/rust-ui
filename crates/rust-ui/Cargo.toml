@@ -12,6 +12,9 @@ categories = ["gui"]
 # Layout engine — CSS Flexbox/Grid in Rust
 taffy = "0.7"
 
+# Clipboard access (copy/paste in Input widget)
+arboard = "3"
+
 # Unicode text shaping, BiDi, CJK support
 cosmic-text = "0.12"
 

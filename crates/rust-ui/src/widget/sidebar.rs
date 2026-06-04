@@ -21,7 +21,7 @@
 use crate::color::Color;
 use crate::event::{Event, EventStatus, MouseButton};
 use crate::render::{Point, Rect, Renderer, TextOptions};
-use crate::style::{Corners, Theme};
+use crate::style::{Corners, CursorStyle, Theme};
 use crate::widget::Widget;
 
 // ── SidebarItem ───────────────────────────────────────────────────────────────
@@ -261,7 +261,7 @@ impl Widget for Sidebar {
                 }
                 EventStatus::Ignored
             }
-            Event::MouseClick { pos, button: MouseButton::Left } => {
+            Event::MouseDown { pos, button: MouseButton::Left } => {
                 let rects = self.item_rects(bounds.x, bounds.y);
                 for (gi, ii, rect) in &rects {
                     if rect.contains(pos.x, pos.y) {
@@ -275,6 +275,20 @@ impl Widget for Sidebar {
             }
             _ => EventStatus::Ignored,
         }
+    }
+
+    fn intrinsic_size(&self, _theme: &Theme) -> (f32, f32) {
+        (self.width, 10000.0) // full height, fixed width
+    }
+
+    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
+        let rects = self.item_rects(bounds.x, bounds.y);
+        for (_, _, rect) in &rects {
+            if rect.contains(pos.0, pos.1) {
+                return CursorStyle::Pointer;
+            }
+        }
+        CursorStyle::Default
     }
 }
 

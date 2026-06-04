@@ -45,6 +45,13 @@ impl Text {
 impl Widget for Text {
     fn id(&self) -> &str { &self.id }
 
+    fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
+        let fs = self.size.unwrap_or(theme.font_size_md);
+        let char_w = fs * 0.6;
+        let w = self.content.chars().count() as f32 * char_w;
+        (w, fs * 1.4)
+    }
+
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         let opts = TextOptions {
             font_size:   self.size.unwrap_or(theme.font_size_md),

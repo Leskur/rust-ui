@@ -2,7 +2,7 @@
 
 use crate::event::{Event, EventStatus};
 use crate::render::{Rect, Renderer};
-use crate::style::Theme;
+use crate::style::{CursorStyle, Theme};
 use crate::widget::Widget;
 
 /// Horizontal arrangement of widgets.
@@ -35,53 +35,62 @@ impl Row {
     pub fn padding(mut self, p: f32) -> Self { self.padding = p; self }
 }
 
+impl Row {
+    fn child_rects(&self, bounds: Rect, theme: &Theme) -> Vec<Rect> {
+        let inner_x = bounds.x + self.padding;
+        let inner_y = bounds.y + self.padding;
+        let mut x = inner_x;
+        let mut rects = Vec::with_capacity(self.children.len());
+        for child in &self.children {
+            let (w, h) = child.intrinsic_size(theme);
+            rects.push(Rect::new(x, inner_y, w, h));
+            x += w + self.spacing;
+        }
+        rects
+    }
+}
+
 impl Widget for Row {
     fn id(&self) -> &str { &self.id }
     fn is_container(&self) -> bool { true }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
-        let inner = Rect::new(
-            bounds.x + self.padding,
-            bounds.y + self.padding,
-            bounds.width  - self.padding * 2.0,
-            bounds.height - self.padding * 2.0,
-        );
-
-        // Simple equal-width distribution (real layout uses taffy)
-        let n = self.children.len() as f32;
-        if n == 0.0 { return; }
-        let total_spacing = self.spacing * (n - 1.0);
-        let child_w = (inner.width - total_spacing) / n;
-
-        let mut x = inner.x;
-        for child in &self.children {
-            let child_bounds = Rect::new(x, inner.y, child_w, inner.height);
-            child.draw(renderer, child_bounds, theme);
-            x += child_w + self.spacing;
+        let rects = self.child_rects(bounds, theme);
+        for (child, cb) in self.children.iter().zip(rects.iter()) {
+            child.draw(renderer, *cb, theme);
         }
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
-        let inner = Rect::new(
-            bounds.x + self.padding,
-            bounds.y + self.padding,
-            bounds.width  - self.padding * 2.0,
-            bounds.height - self.padding * 2.0,
+        let theme = Theme::default();
+        let rects = self.child_rects(bounds, &theme);
+        let broadcast = matches!(
+            event,
+            Event::MouseMove { .. } | Event::MouseDown { .. } | Event::MouseUp { .. }
         );
-        let n = self.children.len() as f32;
-        if n == 0.0 { return EventStatus::Ignored; }
-        let child_w = (inner.width - self.spacing * (n - 1.0)) / n;
-        let mut x = inner.x;
-        for child in &mut self.children {
-            let cb = Rect::new(x, inner.y, child_w, inner.height);
-            if child.handle_event(event, cb) == EventStatus::Consumed {
-                return EventStatus::Consumed;
+        let mut result = EventStatus::Ignored;
+        for (child, cb) in self.children.iter_mut().zip(rects.iter()) {
+            let s = child.handle_event(event, *cb);
+            if s == EventStatus::Consumed {
+                result = EventStatus::Consumed;
+                if !broadcast { return EventStatus::Consumed; }
             }
-            x += child_w + self.spacing;
         }
-        EventStatus::Ignored
+        result
+    }
+
+    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
+        let theme = Theme::default();
+        let rects = self.child_rects(bounds, &theme);
+        for (child, cb) in self.children.iter().zip(rects.iter()) {
+            if cb.contains(pos.0, pos.1) {
+                return child.cursor_at(pos, *cb);
+            }
+        }
+        CursorStyle::Default
     }
 }
+
 
 /// Shorthand constructor — takes a `Vec<Box<dyn Widget>>`.
 pub fn row(children: Vec<Box<dyn Widget>>) -> Row {

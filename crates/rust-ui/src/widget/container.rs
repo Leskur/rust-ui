@@ -3,7 +3,7 @@
 use crate::color::Color;
 use crate::event::{Event, EventStatus};
 use crate::render::{Rect, Renderer};
-use crate::style::{Corners, Edges, Style, Theme};
+use crate::style::{Corners, CursorStyle, Edges, Style, Theme};
 use crate::widget::Widget;
 
 /// A styled wrapper around one child widget.
@@ -87,6 +87,32 @@ impl Widget for Container {
 
         if let Some(child) = &self.child {
             child.draw(renderer, inner, theme);
+        }
+    }
+
+    fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
+        let padding = self.style.padding.unwrap_or(Edges::ZERO);
+        let ph = padding.left + padding.right;
+        let pv = padding.top + padding.bottom;
+        if let Some(child) = &self.child {
+            let (cw, ch) = child.intrinsic_size(theme);
+            (cw + ph, ch + pv)
+        } else {
+            (ph, pv)
+        }
+    }
+
+    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
+        let padding = self.style.padding.unwrap_or(Edges::ZERO);
+        let inner = Rect::new(
+            bounds.x + padding.left, bounds.y + padding.top,
+            bounds.width - padding.left - padding.right,
+            bounds.height - padding.top - padding.bottom,
+        );
+        if let Some(child) = &self.child {
+            child.cursor_at(pos, inner)
+        } else {
+            CursorStyle::Default
         }
     }
 

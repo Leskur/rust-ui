@@ -82,11 +82,14 @@ pub trait Renderer {
 
     // ── Text ────────────────────────────────────────────────────────────────
 
-    /// Draw text at the given position. Returns the measured text size.
+    /// Draw text at the given position (top-left of the text bounding box).
+    /// Returns the measured text size (width, height).
     fn draw_text(&mut self, text: &str, pos: Point, opts: &TextOptions) -> (f32, f32);
 
     /// Measure text without drawing it.
-    fn measure_text(&self, text: &str, opts: &TextOptions) -> (f32, f32);
+    /// Returns (width, height, ascent) where ascent is the distance from
+    /// baseline to the top of the text bounding box (used for vertical alignment).
+    fn measure_text(&self, text: &str, opts: &TextOptions) -> (f32, f32, f32);
 
     // ── Clipping ────────────────────────────────────────────────────────────
 
