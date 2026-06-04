@@ -8,6 +8,7 @@ pub mod column;
 pub mod container;
 pub mod input;
 pub mod row;
+pub mod sidebar;
 pub mod switch;
 pub mod text;
 
@@ -16,6 +17,7 @@ pub use column::{column, Column};
 pub use container::{container, Container};
 pub use input::{input, Input};
 pub use row::{row, Row};
+pub use sidebar::{sidebar, sidebar_group, sidebar_item, Sidebar, SidebarGroup, SidebarItem};
 pub use switch::{switch, Switch};
 pub use text::{text, Text};
 

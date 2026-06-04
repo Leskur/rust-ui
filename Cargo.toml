@@ -5,6 +5,7 @@ members = [
     "crates/rust-ui-wgpu",
     "examples/counter",
     "examples/gallery",
+    "examples/showcase",
 ]
 
 [workspace.package]

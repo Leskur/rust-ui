@@ -1,0 +1,12 @@
+[package]
+name = "showcase"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "showcase"
+path = "src/main.rs"
+
+[dependencies]
+rust-ui      = { workspace = true }
+rust-ui-wgpu = { workspace = true }
