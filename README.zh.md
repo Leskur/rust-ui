@@ -1,8 +1,6 @@
 # rust-ui
 
-> 为前端开发者设计的 Rust 桌面 UI 库。
-
-由一位受够了 Rust UI 丑陋外观的前端开发者构建。
+> 为 Rust 桌面应用设计的美观、易用 UI 库。
 
 ---
 
@@ -18,7 +16,7 @@
 | 没有类 CSS 的继承/层叠 | `style.merge(other)` — 后者覆盖前者，和 CSS 优先级一致 |
 | 动画需要大量样板代码 | `AnimationScheduler` 统一管理所有补间，每帧 tick 一次 |
 | 渲染后端写死 | `Renderer` trait — 随时替换 wgpu、skia 或测试后端 |
-| API 对前端开发者不友好 | Builder 链式 API，命名参考 SwiftUI + shadcn/ui |
+| API 冗长，难以上手 | 链式 Builder API，命名参考 SwiftUI + shadcn/ui |
 
 ## 快速开始
 
@@ -168,7 +166,7 @@ rust-ui-wgpu          wgpu + vello + winit 渲染后端
 |---|---|---|---|---|
 | 样式系统 | ✅ 可组合 Style | ❌ 闭包 | ❌ 即时模式 | ✅ 较好 |
 | 动画 | ✅ 集中调度器 | ⚠️ 需手动 | ❌ | ✅ |
-| 前端友好 API | ✅ | ⚠️ | ⚠️ | ❌ |
+| 链式 Builder API | ✅ | ⚠️ | ⚠️ | ❌ |
 | 渲染后端可替换 | ✅ | ✅ | ❌ | ❌ |
 | 跨平台 | 🔨 开发中 | ✅ | ✅ | ⚠️ macOS 为主 |
 

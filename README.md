@@ -1,10 +1,6 @@
 # rust-ui
 
-> A beautiful, frontend-friendly UI library for Rust desktop applications.  
-> 为前端开发者设计的 Rust 桌面 UI 库。
-
-Built by a frontend developer who got tired of ugly Rust UIs.  
-由一位受够了 Rust UI 丑陋外观的前端开发者构建。
+> A beautiful, ergonomic UI library for Rust desktop applications.
 
 ---
 
@@ -20,7 +16,7 @@ Built by a frontend developer who got tired of ugly Rust UIs.
 | No CSS-like inheritance | `style.merge(other)` — later values win, like CSS specificity |
 | Animation requires boilerplate | `AnimationScheduler` owns all tweens, tick once per frame |
 | Renderer locked to one backend | `Renderer` trait — swap wgpu, skia, or test backends freely |
-| API unfamiliar to web devs | Builder API inspired by SwiftUI + shadcn/ui naming |
+| Verbose, unfamiliar API | Chainable builder API inspired by SwiftUI + shadcn/ui |
 
 ## Quick start
 
