@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rust-ui",
+    "crates/rust-ui-wgpu",
+    "examples/counter",
+    "examples/gallery",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Leskur"]
+license = "MIT"
+repository = "https://github.com/leskur/rust-ui"
+
+[workspace.dependencies]
+rust-ui = { path = "crates/rust-ui" }
+rust-ui-wgpu = { path = "crates/rust-ui-wgpu" }

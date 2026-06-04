@@ -1,0 +1,12 @@
+[package]
+name = "gallery"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "gallery"
+path = "src/main.rs"
+
+[dependencies]
+rust-ui = { workspace = true }
+rust-ui-wgpu = { workspace = true }

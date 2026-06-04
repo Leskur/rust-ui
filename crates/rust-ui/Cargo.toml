@@ -1,0 +1,23 @@
+[package]
+name = "rust-ui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "A beautiful, frontend-friendly UI library for Rust desktop applications"
+keywords = ["ui", "gui", "desktop", "widgets"]
+categories = ["gui"]
+
+[dependencies]
+# Layout engine — CSS Flexbox/Grid in Rust
+taffy = "0.7"
+
+# Unicode text shaping, BiDi, CJK support
+cosmic-text = "0.12"
+
+# Serialization (for themes / style config files)
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde", "taffy/serde"]
