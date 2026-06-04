@@ -1,8 +1,16 @@
 # rust-ui
 
-> A beautiful, frontend-friendly UI library for Rust desktop applications.
+> A beautiful, frontend-friendly UI library for Rust desktop applications.  
+> 为前端开发者设计的 Rust 桌面 UI 库。
 
-Built by a frontend developer who got tired of ugly Rust UIs.
+Built by a frontend developer who got tired of ugly Rust UIs.  
+由一位受够了 Rust UI 丑陋外观的前端开发者构建。
+
+---
+
+**[中文文档 →](./README.zh.md)**
+
+---
 
 ## Why another UI library?
 
@@ -12,7 +20,7 @@ Built by a frontend developer who got tired of ugly Rust UIs.
 | No CSS-like inheritance | `style.merge(other)` — later values win, like CSS specificity |
 | Animation requires boilerplate | `AnimationScheduler` owns all tweens, tick once per frame |
 | Renderer locked to one backend | `Renderer` trait — swap wgpu, skia, or test backends freely |
-| API unfamiliar to web devs | Builder API similar to SwiftUI + Tailwind naming |
+| API unfamiliar to web devs | Builder API inspired by SwiftUI + shadcn/ui naming |
 
 ## Quick start
 
@@ -27,9 +35,13 @@ let ui = column![
 ]
 .spacing(12.0)
 .padding(24.0);
+
+rust_ui_wgpu::run("My App", 800, 600, ui, Theme::dark());
 ```
 
 ## Style system
+
+Inspired by shadcn/ui — styles are plain values you own and compose.
 
 ```rust
 use rust_ui::style::Style;
@@ -43,7 +55,7 @@ let card = Style::new()
     .border_color(Color::hex("#2a2d3e"))
     .border_width(1.0);
 
-// Derive a variant
+// Derive a variant — merge() works like CSS specificity
 let active_card = card.clone().border_color(Color::hex("#5c7cfa"));
 ```
 
@@ -54,70 +66,90 @@ use rust_ui::style::Theme;
 
 let theme = Theme::dark();   // VS Code-inspired dark
 let theme = Theme::light();  // Clean light theme
-// Coming: Theme::from_file("theme.toml")
 ```
 
 ## Animation
 
+The `AnimationScheduler` owns all active tweens. Widgets never manage time.
+
 ```rust
-// In your event handler:
+// Trigger from event handler:
 scheduler.animate_to("my-switch", "progress", 1.0, Easing::EaseOut, 0.18);
 
-// In your frame loop:
-scheduler.tick(dt);  // advances all active animations
+// Runtime calls once per frame:
+scheduler.tick(dt);
 
-// In your widget draw:
+// Widget reads current value:
 let p = scheduler.get("my-switch", "progress").unwrap_or(0.0);
 ```
 
 ## Architecture
 
 ```
-rust-ui          — core library (zero GPU deps)
-  ├── color      — Color type with hex/lerp helpers
-  ├── style      — Style, Theme, Edges, Corners
-  ├── render     — Renderer trait (backend contract)
-  ├── event      — Input event types
-  ├── layout     — Flexbox via taffy
-  ├── animation  — AnimationScheduler
-  └── widget     — Button, Text, Input, Switch, Row, Column, Container
+rust-ui               core library — zero GPU dependencies
+  ├── color           Color with hex() / lerp()
+  ├── style           Style (composable), Theme (dark / light)
+  ├── render          Renderer trait — backend contract
+  ├── event           Input event types
+  ├── layout          Flexbox engine (taffy)
+  ├── animation       AnimationScheduler + Easing
+  └── widget
+        ├── Button    Primary / Secondary / Danger / Ghost variants
+        ├── Text      size, color, bold, font family
+        ├── Input     text input with placeholder + cursor
+        ├── Switch    animated toggle
+        ├── Row       horizontal flex container
+        ├── Column    vertical flex container
+        └── Container styled box with padding / border / radius
 
-rust-ui-wgpu     — wgpu + vello rendering backend (🚧 WIP)
-  ├── renderer   — WgpuRenderer implements Renderer
-  └── window     — winit event loop + frame pump
+rust-ui-wgpu          wgpu + vello + winit rendering backend
+  ├── renderer        VelloRenderer implements Renderer trait
+  ├── text            cosmic-text font shaping
+  └── window          winit event loop + frame pump
 ```
 
 ## Roadmap
 
-### Phase 1 — Core (current)
-- [x] Color system
-- [x] Style / Theme
-- [x] Renderer trait
-- [x] Event system
-- [x] Animation scheduler
-- [x] Layout (taffy wrapper)
+Inspired by [shadcn/ui](https://ui.shadcn.com/docs/components) component set.
+
+### ✅ Phase 1 — Foundation (done)
+- [x] Color, Style, Theme
+- [x] Renderer trait + wgpu/vello backend
+- [x] AnimationScheduler
 - [x] Button, Text, Input, Switch, Row, Column, Container
+- [x] counter + gallery examples running
 
-### Phase 2 — Backend
-- [ ] wgpu + vello renderer
-- [ ] winit window loop
-- [ ] Text rendering via cosmic-text
-- [ ] Working counter + gallery examples
+### 🔨 Phase 2 — Core components
+- [ ] `Badge` — small status label
+- [ ] `Separator` — horizontal / vertical divider
+- [ ] `Spinner` — loading animation (validates AnimationScheduler)
+- [ ] `Avatar` — circular image / initials placeholder
+- [ ] `Button` size variants: `xs / sm / md / lg`
 
-### Phase 3 — More widgets
-- [ ] Checkbox, Radio
-- [ ] Select / Dropdown
-- [ ] Slider
-- [ ] ScrollView (virtualized)
-- [ ] Modal / Overlay
-- [ ] Tooltip
-- [ ] Badge / Tag
+### 📦 Phase 3 — Interactive components
+- [ ] `Select` — dropdown picker
+- [ ] `Checkbox` — multi-select
+- [ ] `Radio` — single-select group
+- [ ] `Slider` — drag to set value
+- [ ] `Tooltip` — hover hint
+- [ ] `Dropdown Menu` — context menu
+- [ ] `Dialog / Modal` — overlay with focus trap
+- [ ] `Tabs` — tabbed panels
 
-### Phase 4 — Polish
-- [ ] Hot-reload themes
-- [ ] Accessibility (a11y)
+### 📊 Phase 4 — Data & layout
+- [ ] `Table` — virtualized rows for large datasets
+- [ ] `ScrollView` — virtualized scroll list
+- [ ] `Progress` — progress bar
+- [ ] `Toast` — ephemeral notification
+- [ ] `Accordion` — collapsible sections
+- [ ] `Sidebar` — navigation panel
+- [ ] `Resizable` — drag-to-resize panels
+
+### ✨ Phase 5 — Polish
+- [ ] Theme hot-reload from TOML file
+- [ ] Accessibility (ARIA-equivalent metadata)
 - [ ] SVG icon support
-- [ ] Table (virtualized rows)
+- [ ] `cargo add rust-ui-cli` — shadcn-style component installer
 
 ## License
 

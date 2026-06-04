@@ -46,6 +46,27 @@ Platform input (winit)
 | `animation` | `AnimationScheduler`, `Animation`, `Easing` |
 | `widget` | All built-in widgets implementing `Widget` trait |
 
+## Component status
+
+| Widget | File | Status |
+|--------|------|--------|
+| Button | `widget/button.rs` | ✅ Primary/Secondary/Danger/Ghost |
+| Text | `widget/text.rs` | ✅ size, color, bold |
+| Input | `widget/input.rs` | ✅ placeholder, cursor, keyboard |
+| Switch | `widget/switch.rs` | ✅ animated thumb |
+| Row | `widget/row.rs` | ✅ horizontal flex |
+| Column | `widget/column.rs` | ✅ vertical flex |
+| Container | `widget/container.rs` | ✅ bg, radius, border, padding |
+| Badge | — | 📋 Phase 2 |
+| Separator | — | 📋 Phase 2 |
+| Spinner | — | 📋 Phase 2 |
+| Select | — | 📋 Phase 3 |
+| Checkbox | — | 📋 Phase 3 |
+| Slider | — | 📋 Phase 3 |
+| Dialog | — | 📋 Phase 3 |
+| Tabs | — | 📋 Phase 3 |
+| Table | — | 📋 Phase 4 |
+
 ## Adding a new widget
 
 1. Create `src/widget/my_widget.rs`
