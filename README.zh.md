@@ -52,7 +52,9 @@ cargo run -p showcase
 ## 文档
 
 - [组件文档](docs/components/) — Button、Input、Switch 等
+- [组件文档（中文）](docs/components/button.zh.md) — Button、Input、Switch 等
 - [指南](docs/guides/) — 主题定制、动画系统、布局
+- [指南（中文）](docs/guides/theming.zh.md) — 主题定制、动画系统、布局
 
 ## 架构
 
