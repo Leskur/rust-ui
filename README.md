@@ -51,8 +51,8 @@ cargo run -p showcase
 
 ## Documentation
 
-- [Components](docs/components/) — Button, Input, Switch, and more
-- [Guides](docs/guides/) — Theming, Animation, Layout
+- [Components](docs/en/components/) — Button, Input, Switch, and more
+- [Guides](docs/en/guides/) — Theming, Animation, Layout
 
 ## Architecture
 
