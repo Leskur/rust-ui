@@ -233,6 +233,7 @@ fn parse_svg_path(d: &str) -> vello::kurbo::BezPath {
     let mut cy = 0.0_f64;
     let mut start_x = 0.0_f64;
     let mut start_y = 0.0_f64;
+    let mut has_move = false;
 
     while let Some(token) = tokens.next() {
         match token {
@@ -246,8 +247,13 @@ fn parse_svg_path(d: &str) -> vello::kurbo::BezPath {
                 }
                 start_x = cx; start_y = cy;
                 bez_path.move_to((cx, cy));
+                has_move = true;
             }
             "L" | "l" => {
+                if !has_move {
+                    bez_path.move_to((cx, cy));
+                    has_move = true;
+                }
                 let x = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 let y = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 if token == "L" {
@@ -258,6 +264,10 @@ fn parse_svg_path(d: &str) -> vello::kurbo::BezPath {
                 bez_path.line_to((cx, cy));
             }
             "C" | "c" => {
+                if !has_move {
+                    bez_path.move_to((cx, cy));
+                    has_move = true;
+                }
                 let x1 = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 let y1 = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 let x2 = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
