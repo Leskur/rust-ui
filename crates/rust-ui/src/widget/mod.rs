@@ -4,6 +4,7 @@
 //! Widgets implement the `Widget` trait which gives them layout + draw + event handling.
 
 pub mod button;
+pub mod code_block;
 pub mod column;
 pub mod container;
 pub mod divider;
@@ -21,6 +22,7 @@ pub mod tab_view;
 pub mod text;
 
 pub use button::{button, Button};
+pub use code_block::{code_block, CodeBlock};
 pub use column::{column, Column};
 pub use container::{container, Container};
 pub use divider::{divider, Divider, DividerAxis};
