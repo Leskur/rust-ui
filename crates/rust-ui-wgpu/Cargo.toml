@@ -27,6 +27,9 @@ cosmic-text = "0.12"
 kurbo  = "0.11"
 peniko = "0.3"
 
+# SVG parsing (for icon paths)
+svg = "0.17"
+
 # Async for wgpu init
 pollster = "0.4"
 

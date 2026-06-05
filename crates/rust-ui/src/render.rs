@@ -107,6 +107,12 @@ pub trait Renderer {
     /// Pop the most recent translation offset.
     fn pop_offset(&mut self);
 
+    // ── Paths ────────────────────────────────────────────────────────────────
+
+    /// Draw a vector path. `path_data` is an SVG path string (d attribute).
+    /// The path is transformed by `transform` (scale/translate) and filled with `color`.
+    fn draw_path(&mut self, path_data: &str, transform: (f32, f32, f32), color: Color);
+
     // ── Images ──────────────────────────────────────────────────────────────
 
     /// Draw a decoded RGBA image into `dest`.

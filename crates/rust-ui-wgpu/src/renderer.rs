@@ -196,6 +196,14 @@ impl<'a> Renderer for VelloRenderer<'a> {
         }
     }
 
+    fn draw_path(&mut self, path_data: &str, transform: (f32, f32, f32), color: Color) {
+        let (tx, ty, scale) = transform;
+        let bez_path = parse_svg_path(path_data);
+        let affine = Affine::translate((tx as f64, ty as f64)) * Affine::scale(scale as f64);
+        let brush = Brush::Solid(to_vello_color(color));
+        self.scene.fill(Fill::NonZero, affine, &brush, None, &bez_path);
+    }
+
     fn draw_image(&mut self, data: &[u8], src_width: u32, src_height: u32, dest: Rect) {
         let dest = self.offset_rect(dest);
         let blob = peniko::Blob::new(std::sync::Arc::new(data.to_vec()));
@@ -214,4 +222,61 @@ impl<'a> Renderer for VelloRenderer<'a> {
     fn end_frame(&mut self) {
         // GPU submit happens in window.rs after draw() returns
     }
+}
+
+// ── SVG path parser (simplified, M L C Z only) ───────────────────────────────
+
+fn parse_svg_path(d: &str) -> vello::kurbo::BezPath {
+    let mut bez_path = vello::kurbo::BezPath::new();
+    let mut tokens = d.split_whitespace();
+    let mut cx = 0.0_f64;
+    let mut cy = 0.0_f64;
+    let mut start_x = 0.0_f64;
+    let mut start_y = 0.0_f64;
+
+    while let Some(token) = tokens.next() {
+        match token {
+            "M" | "m" => {
+                let x = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                let y = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                if token == "M" {
+                    cx = x; cy = y;
+                } else {
+                    cx += x; cy += y;
+                }
+                start_x = cx; start_y = cy;
+                bez_path.move_to((cx, cy));
+            }
+            "L" | "l" => {
+                let x = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                let y = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                if token == "L" {
+                    cx = x; cy = y;
+                } else {
+                    cx += x; cy += y;
+                }
+                bez_path.line_to((cx, cy));
+            }
+            "C" | "c" => {
+                let x1 = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                let y1 = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                let x2 = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                let y2 = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                let x = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                let y = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+                if token == "C" {
+                    cx = x; cy = y;
+                } else {
+                    cx += x; cy += y;
+                }
+                bez_path.curve_to((x1, y1), (x2, y2), (cx, cy));
+            }
+            "Z" | "z" => {
+                bez_path.close_path();
+                cx = start_x; cy = start_y;
+            }
+            _ => {}
+        }
+    }
+    bez_path
 }

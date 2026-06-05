@@ -33,6 +33,7 @@ fn main() {
         ("Switch".to_string(),    pages::switch::page(scheduler.clone())),
         ("Container".to_string(), pages::container::page()),
         ("Layout".to_string(),    pages::layout::page()),
+        ("Image".to_string(),     pages::image::page()),
     ]).active("Button")));
 
     // Thin wrapper so Rc<RefCell<TabView>> can be used as a Widget
@@ -73,6 +74,7 @@ fn main() {
                 sidebar_item("Switch"),
                 sidebar_item("Container"),
                 sidebar_item("Layout"),
+                sidebar_item("Image"),
             ],
         ),
         sidebar_group(
@@ -83,7 +85,6 @@ fn main() {
                 sidebar_item("Checkbox"),
                 sidebar_item("Dialog"),
                 sidebar_item("Badge"),
-                sidebar_item("Image"),
             ],
         ),
     ])
