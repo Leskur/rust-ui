@@ -196,6 +196,17 @@ impl<'a> Renderer for VelloRenderer<'a> {
         }
     }
 
+    fn draw_image(&mut self, data: &[u8], src_width: u32, src_height: u32, dest: Rect) {
+        let dest = self.offset_rect(dest);
+        let blob = peniko::Blob::new(std::sync::Arc::new(data.to_vec()));
+        let image = peniko::Image::new(blob, peniko::ImageFormat::Rgba8, src_width, src_height);
+        let scale_x = dest.width  as f64 / src_width  as f64;
+        let scale_y = dest.height as f64 / src_height as f64;
+        let transform = Affine::translate((dest.x as f64, dest.y as f64))
+            * Affine::scale_non_uniform(scale_x, scale_y);
+        self.scene.draw_image(&image, transform);
+    }
+
     fn begin_frame(&mut self, _size: (f32, f32)) {
         // Scene is already fresh — cleared by window.rs before calling draw()
     }

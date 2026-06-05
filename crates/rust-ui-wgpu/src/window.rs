@@ -45,6 +45,15 @@ pub fn run_with_scheduler(
     theme:     Theme,
     scheduler: std::sync::Arc<std::sync::Mutex<AnimationScheduler>>,
 ) {
+    // Register HTTP loader for Image widget (ureq, blocking, runs in background thread)
+    rust_ui::widget::image::set_http_loader(|url| {
+        use std::io::Read;
+        let resp = ureq::get(url).call().map_err(|e| e.to_string())?;
+        let mut buf = Vec::new();
+        resp.into_reader().read_to_end(&mut buf).map_err(|e| e.to_string())?;
+        Ok(buf)
+    });
+
     let event_loop = EventLoop::new().expect("Failed to create event loop");
     let mut app = App {
         title:      title.to_string(),

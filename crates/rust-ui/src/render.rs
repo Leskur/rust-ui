@@ -107,6 +107,15 @@ pub trait Renderer {
     /// Pop the most recent translation offset.
     fn pop_offset(&mut self);
 
+    // ── Images ──────────────────────────────────────────────────────────────
+
+    /// Draw a decoded RGBA image into `dest`.
+    ///
+    /// `data` is raw RGBA8 pixel bytes, row-major.
+    /// `src_width` / `src_height` are the image dimensions in pixels.
+    /// The image is stretched to fill `dest` (scaling is done by the backend).
+    fn draw_image(&mut self, data: &[u8], src_width: u32, src_height: u32, dest: Rect);
+
     // ── Frame lifecycle ─────────────────────────────────────────────────────
 
     /// Called at the start of each frame. `size` is (width, height) in logical px.

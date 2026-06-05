@@ -15,6 +15,9 @@ taffy = "0.7"
 # Clipboard access (copy/paste in Input widget)
 arboard = "3"
 
+# Image decoding (PNG, JPEG, WebP, etc.)
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
+
 # Unicode text shaping, BiDi, CJK support
 cosmic-text = "0.12"
 
