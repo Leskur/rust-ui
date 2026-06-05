@@ -65,13 +65,23 @@ rust-ui               core library — zero GPU dependencies
   ├── layout          Flexbox engine (taffy)
   ├── animation       AnimationScheduler + Easing
   └── widget
-        ├── Button    Primary / Secondary / Danger / Ghost variants
-        ├── Text      size, color, bold, font family
-        ├── Input     HTML-like editing: cursor, selection, clipboard, IME, scroll
-        ├── Switch    animated toggle
-        ├── Row       horizontal flex container
-        ├── Column    vertical flex container
-        └── Container styled box with padding / border / radius
+        ├── Button     Primary / Secondary / Danger / Ghost variants, sizes, states
+        ├── Text       size, color, bold, font family
+        ├── Input      HTML-like editing: cursor, selection, clipboard, IME, scroll
+        ├── Switch     animated toggle
+        ├── Row        horizontal flex container
+        ├── Column     vertical flex container
+        ├── Container  styled box with padding / border / radius
+        ├── Image      local file + network URL, async loading, ObjectFit
+        ├── Svg        SVG file / URL rasterized via resvg
+        ├── Icon       hardcoded lucide-style vector icons
+        ├── CodeBlock  dark-background monospace code display
+        ├── ScrollArea scrollable container
+        ├── Divider    horizontal / vertical separator
+        ├── Spacer     flexible space
+        ├── Stack      layered z-axis container
+        ├── Sidebar    navigation panel with groups
+        └── TabView    tabbed panels
 
 rust-ui-wgpu          wgpu + vello + winit rendering backend
   ├── renderer        VelloRenderer implements Renderer trait
@@ -90,12 +100,18 @@ Inspired by [shadcn/ui](https://ui.shadcn.com/docs/components) component set.
 - [x] Button, Text, Input, Switch, Row, Column, Container
 - [x] counter + gallery examples running
 
-### 🔨 Phase 2 — Core components
-- [ ] `Badge` — small status label
-- [ ] `Separator` — horizontal / vertical divider
-- [ ] `Spinner` — loading animation (validates AnimationScheduler)
-- [ ] `Avatar` — circular image / initials placeholder
-- [ ] `Button` size variants: `xs / sm / md / lg`
+### ✅ Phase 2 — Core components (done)
+- [x] `Divider` — horizontal / vertical separator
+- [x] `ScrollArea` — scrollable container
+- [x] `Spacer` — flexible space
+- [x] `Stack` — z-axis layered container
+- [x] `Sidebar` — navigation panel with groups
+- [x] `TabView` — tabbed panels
+- [x] `Button` size variants: `xs / sm / md / lg`
+- [x] `Image` — local + network image, async loading, ObjectFit
+- [x] `Svg` — SVG file / URL rasterized via resvg
+- [x] `Icon` — vector icon widget (lucide-style)
+- [x] `CodeBlock` — monospace code display with line numbers
 
 ### 📦 Phase 3 — Interactive components
 - [ ] `Select` — dropdown picker
@@ -105,21 +121,18 @@ Inspired by [shadcn/ui](https://ui.shadcn.com/docs/components) component set.
 - [ ] `Tooltip` — hover hint
 - [ ] `Dropdown Menu` — context menu
 - [ ] `Dialog / Modal` — overlay with focus trap
-- [ ] `Tabs` — tabbed panels
+- [ ] Event bubbling mechanism
 
 ### 📊 Phase 4 — Data & layout
 - [ ] `Table` — virtualized rows for large datasets
-- [ ] `ScrollView` — virtualized scroll list
 - [ ] `Progress` — progress bar
 - [ ] `Toast` — ephemeral notification
 - [ ] `Accordion` — collapsible sections
-- [ ] `Sidebar` — navigation panel
 - [ ] `Resizable` — drag-to-resize panels
 
 ### ✨ Phase 5 — Polish
 - [ ] Theme hot-reload from TOML file
 - [ ] Accessibility (ARIA-equivalent metadata)
-- [ ] SVG icon support
 - [ ] `cargo add rust-ui-cli` — shadcn-style component installer
 
 ## License

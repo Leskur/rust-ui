@@ -65,13 +65,23 @@ rust-ui               核心库 — 零 GPU 依赖
   ├── layout          Flexbox 布局引擎（基于 taffy）
   ├── animation       AnimationScheduler + Easing
   └── widget
-        ├── Button    Primary / Secondary / Danger / Ghost 变体
-        ├── Text      大小、颜色、粗体、字体族
-        ├── Input     HTML 风格编辑：光标、选区、剪贴板、IME、滚动
-        ├── Switch    带动画的开关
-        ├── Row       水平 flex 容器
-        ├── Column    垂直 flex 容器
-        └── Container 带 padding / border / radius 的样式盒子
+        ├── Button     Primary / Secondary / Danger / Ghost 变体，尺寸、状态
+        ├── Text       大小、颜色、粗体、字体族
+        ├── Input      HTML 风格编辑：光标、选区、剪贴板、IME、滚动
+        ├── Switch     带动画的开关
+        ├── Row        水平 flex 容器
+        ├── Column     垂直 flex 容器
+        ├── Container  带 padding / border / radius 的样式盒子
+        ├── Image      本地文件 + 网络 URL，异步加载，ObjectFit
+        ├── Svg        SVG 文件 / URL，由 resvg 光栅化渲染
+        ├── Icon       lucide 风格矢量图标
+        ├── CodeBlock  深色背景 + 等宽字体代码展示，支持行号
+        ├── ScrollArea 可滚动容器
+        ├── Divider    水平 / 垂直分割线
+        ├── Spacer     弹性间距
+        ├── Stack      z 轴层叠容器
+        ├── Sidebar    带分组的导航侧边栏
+        └── TabView    标签页切换
 
 rust-ui-wgpu          wgpu + vello + winit 渲染后端
   ├── renderer        VelloRenderer 实现 Renderer trait
@@ -90,36 +100,39 @@ rust-ui-wgpu          wgpu + vello + winit 渲染后端
 - [x] Button、Text、Input、Switch、Row、Column、Container
 - [x] counter、gallery 示例正常运行
 
-### 🔨 第二阶段 — 核心组件
-- [ ] `Badge` — 状态小标签
-- [ ] `Separator` — 水平/垂直分割线
-- [ ] `Spinner` — 加载动画（验证 AnimationScheduler）
-- [ ] `Avatar` — 圆形图片/文字占位符
-- [ ] `Button` 尺寸变体：`xs / sm / md / lg`
+### ✅ 第二阶段 — 核心组件（已完成）
+- [x] `Divider` — 水平/垂直分割线
+- [x] `ScrollArea` — 可滚动容器
+- [x] `Spacer` — 弹性间距
+- [x] `Stack` — z 轴层叠容器
+- [x] `Sidebar` — 带分组的导航侧边栏
+- [x] `TabView` — 标签页切换
+- [x] `Button` 尺寸变体：`xs / sm / md / lg`
+- [x] `Image` — 本地 + 网络图片，异步加载，ObjectFit
+- [x] `Svg` — SVG 文件 / URL，由 resvg 光栅化渲染
+- [x] `Icon` — lucide 风格矢量图标
+- [x] `CodeBlock` — 深色背景等宽字体代码展示，支持行号
 
 ### 📦 第三阶段 — 交互组件
+- [ ] 事件冒泡机制
 - [ ] `Select` — 下拉选择器
 - [ ] `Checkbox` — 多选框
 - [ ] `Radio` — 单选组
-- [ ] `Slider` — 拖拽数值
+- [ ] `Slider` — 拖拽数値
 - [ ] `Tooltip` — 悬停提示
 - [ ] `Dropdown Menu` — 右键/点击弹出菜单
 - [ ] `Dialog / Modal` — 对话框（带焦点陷阱）
-- [ ] `Tabs` — 标签页切换
 
 ### 📊 第四阶段 — 数据与布局
 - [ ] `Table` — 虚拟化行，支持万级数据流畅渲染
-- [ ] `ScrollView` — 虚拟化滚动列表
 - [ ] `Progress` — 进度条
 - [ ] `Toast` — 短暂通知
 - [ ] `Accordion` — 折叠展开面板
-- [ ] `Sidebar` — 导航侧边栏
 - [ ] `Resizable` — 可拖拽调整大小的面板
 
 ### ✨ 第五阶段 — 打磨
 - [ ] 从 TOML 文件热重载主题
 - [ ] 可访问性支持（a11y 元数据）
-- [ ] SVG 图标支持
 - [ ] `cargo add rust-ui-cli` — 类 shadcn 的组件安装器
 
 ## 与其他 Rust UI 库的对比
