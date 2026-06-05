@@ -34,6 +34,7 @@ fn main() {
         ("Container".to_string(), pages::container::page()),
         ("Layout".to_string(),    pages::layout::page()),
         ("Image".to_string(),     pages::image::page()),
+        ("Icon".to_string(),      pages::icon::page()),
     ]).active("Button")));
 
     // Thin wrapper so Rc<RefCell<TabView>> can be used as a Widget
@@ -75,6 +76,7 @@ fn main() {
                 sidebar_item("Container"),
                 sidebar_item("Layout"),
                 sidebar_item("Image"),
+                sidebar_item("Icon"),
             ],
         ),
         sidebar_group(
