@@ -198,8 +198,10 @@ impl<'a> Renderer for VelloRenderer<'a> {
 
     fn draw_path(&mut self, path_data: &str, transform: (f32, f32, f32), color: Color) {
         let (tx, ty, scale) = transform;
+        let (ox, oy) = self.current_offset();
         let bez_path = parse_svg_path(path_data);
-        let affine = Affine::translate((tx as f64, ty as f64)) * Affine::scale(scale as f64);
+        let affine = Affine::translate(((tx + ox) as f64, (ty + oy) as f64))
+            * Affine::scale(scale as f64);
         let brush = Brush::Solid(to_vello_color(color));
         self.scene.fill(Fill::NonZero, affine, &brush, None, &bez_path);
     }
