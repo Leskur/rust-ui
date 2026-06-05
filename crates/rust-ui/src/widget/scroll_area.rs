@@ -278,6 +278,34 @@ impl Widget for ScrollArea {
         }
     }
 
+    fn layout_children<'a>(&'a self, _bounds: Rect, theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
+        let (bx, by, bw, bh) = self.last_bounds.get();
+        let bounds = Rect::new(bx, by, bw, bh);
+        let vp = self.viewport(bounds);
+        let (cw, ch) = self.child.intrinsic_size(theme);
+        let child_bounds = Rect::new(
+            vp.x - self.scroll_x,
+            vp.y - self.scroll_y,
+            cw.max(vp.width),
+            ch.max(vp.height),
+        );
+        vec![(self.child.as_ref() as &dyn Widget, child_bounds)]
+    }
+
+    fn cursor_at(&self, pos: (f32, f32), _bounds: Rect) -> crate::style::CursorStyle {
+        let (bx, by, bw, bh) = self.last_bounds.get();
+        let bounds = Rect::new(bx, by, bw, bh);
+        let vp = self.viewport(bounds);
+        if !vp.contains(pos.0, pos.1) {
+            return crate::style::CursorStyle::Default;
+        }
+        let theme = Theme::default();
+        for (child, cb) in self.layout_children(bounds, &theme) {
+            return child.cursor_at(pos, cb);
+        }
+        crate::style::CursorStyle::Default
+    }
+
     fn intrinsic_size(&self, _theme: &Theme) -> (f32, f32) {
         // When max dimensions are set, report those so parent Row/Column can
         // allocate correctly. Otherwise return 0 so the parent gives us

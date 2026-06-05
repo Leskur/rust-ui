@@ -63,6 +63,14 @@ impl Widget for TabView {
         EventStatus::Ignored
     }
 
+    fn layout_children<'a>(&'a self, bounds: Rect, _theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
+        if let Some((_, widget)) = self.pages.iter().find(|(k, _)| k == &self.active) {
+            vec![(widget.as_ref() as &dyn Widget, bounds)]
+        } else {
+            vec![]
+        }
+    }
+
     fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
         // Return the max size of all pages
         let mut max_w: f32 = 0.0;

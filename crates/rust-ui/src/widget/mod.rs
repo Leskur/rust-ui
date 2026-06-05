@@ -39,7 +39,21 @@ use crate::style::{CursorStyle, Theme};
 ///
 /// Every widget must implement `draw`. Layout and event handling are optional —
 /// leaf widgets (Text, Button) override `handle_event`; container widgets
-/// override `children` and `layout_style`.
+/// override `layout_children` to get automatic `cursor_at` propagation.
+///
+/// # Implementing a container widget
+///
+/// 1. Implement `layout_children` — return `(child_ref, child_bounds)` pairs.
+///    This is the **single source of truth** for layout. The default `cursor_at`
+///    will automatically walk this list, so you never need to write `cursor_at`
+///    yourself in a container.
+///
+/// 2. Implement `handle_event` — call `child.handle_event(event, cb)` for each
+///    pair from `layout_children`. Mouse events should be broadcast to *all*
+///    children; keyboard events stop at the first consumer.
+///
+/// 3. Do **not** override `cursor_at` unless you need custom cursor logic
+///    (e.g. a scrollbar thumb that shows a grab cursor).
 pub trait Widget {
     /// Unique stable ID for this widget instance (used by the animation scheduler).
     fn id(&self) -> &str;
@@ -61,9 +75,29 @@ pub trait Widget {
         (120.0, 36.0) // sensible default
     }
 
+    /// Return laid-out children as `(child_ref, child_bounds)` pairs.
+    ///
+    /// Container widgets implement this to expose their layout to the framework.
+    /// The default `cursor_at` walks this list automatically, so implementing
+    /// this method is sufficient — no need to override `cursor_at` separately.
+    ///
+    /// The `bounds` parameter is the same bounds passed to `draw`/`handle_event`.
+    fn layout_children<'a>(&'a self, _bounds: Rect, _theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
+        vec![]
+    }
+
     /// Return the cursor style when the pointer is at `pos` over `bounds`.
-    /// The window loop calls this on every MouseMove to update the OS cursor.
-    fn cursor_at(&self, _pos: (f32, f32), _bounds: Rect) -> CursorStyle {
+    ///
+    /// **Default implementation** walks `layout_children` automatically —
+    /// container widgets do NOT need to override this as long as they implement
+    /// `layout_children`. Only override for custom cursor logic (e.g. scrollbars).
+    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
+        let theme = Theme::default();
+        for (child, cb) in self.layout_children(bounds, &theme) {
+            if cb.contains(pos.0, pos.1) {
+                return child.cursor_at(pos, cb);
+            }
+        }
         CursorStyle::Default
     }
 

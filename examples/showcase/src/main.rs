@@ -51,6 +51,15 @@ fn main() {
         fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
             self.inner.borrow().intrinsic_size(theme)
         }
+        fn layout_children<'a>(&'a self, bounds: Rect, theme: &rust_ui::style::Theme) -> Vec<(&'a dyn Widget, Rect)> {
+            // TabViewWrapper can't easily return lifetime-safe refs from RefCell;
+            // delegate cursor_at directly instead
+            let _ = (bounds, theme);
+            vec![]
+        }
+        fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> rust_ui::style::CursorStyle {
+            self.inner.borrow().cursor_at(pos, bounds)
+        }
     }
 
     // ── Sidebar ───────────────────────────────────────────────────────────────
@@ -117,6 +126,14 @@ fn main() {
             let s1 = self.sidebar.handle_event(event, sb);
             if s1 == EventStatus::Consumed { return EventStatus::Consumed; }
             self.content.handle_event(event, cb)
+        }
+        fn layout_children<'a>(&'a self, bounds: Rect, _theme: &rust_ui::style::Theme) -> Vec<(&'a dyn Widget, Rect)> {
+            let sb = Rect::new(bounds.x, bounds.y, self.sidebar_w, bounds.height);
+            let cb = Rect::new(bounds.x + self.sidebar_w, bounds.y, (bounds.width - self.sidebar_w).max(0.0), bounds.height);
+            vec![
+                (self.sidebar.as_ref() as &dyn Widget, sb),
+                (self.content.as_ref() as &dyn Widget, cb),
+            ]
         }
     }
 

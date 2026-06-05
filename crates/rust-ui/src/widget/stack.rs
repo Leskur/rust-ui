@@ -13,7 +13,7 @@
 
 use crate::event::{Event, EventStatus};
 use crate::render::{Rect, Renderer};
-use crate::style::{CursorStyle, Theme};
+use crate::style::Theme;
 use crate::widget::Widget;
 
 /// How children are aligned within the Stack bounds.
@@ -104,15 +104,11 @@ impl Widget for Stack {
         result
     }
 
-    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
-        let theme = Theme::default();
-        for child in self.children.iter().rev() {
-            let cb = self.child_rect(child.as_ref(), bounds, &theme);
-            if cb.contains(pos.0, pos.1) {
-                return child.cursor_at(pos, cb);
-            }
-        }
-        CursorStyle::Default
+    fn layout_children<'a>(&'a self, bounds: Rect, theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
+        // top-most (last) child first for cursor hit-testing
+        self.children.iter().rev()
+            .map(|c| (c.as_ref() as &dyn Widget, self.child_rect(c.as_ref(), bounds, theme)))
+            .collect()
     }
 
     fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {

@@ -2,7 +2,7 @@
 
 use crate::event::{Event, EventStatus};
 use crate::render::{Rect, Renderer};
-use crate::style::{CursorStyle, Theme};
+use crate::style::Theme;
 use crate::widget::Widget;
 
 /// Horizontal arrangement of widgets.
@@ -117,15 +117,12 @@ impl Widget for Row {
         result
     }
 
-    fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
-        let theme = Theme::default();
-        let rects = self.child_rects(bounds, &theme);
-        for (child, cb) in self.children.iter().zip(rects.iter()) {
-            if cb.contains(pos.0, pos.1) {
-                return child.cursor_at(pos, *cb);
-            }
-        }
-        CursorStyle::Default
+    fn layout_children<'a>(&'a self, bounds: Rect, theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
+        let rects = self.child_rects(bounds, theme);
+        self.children.iter()
+            .zip(rects.into_iter())
+            .map(|(c, r)| (c.as_ref() as &dyn Widget, r))
+            .collect()
     }
 }
 

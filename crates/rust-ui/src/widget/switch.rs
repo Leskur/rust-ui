@@ -53,6 +53,7 @@ pub struct Switch {
     label:      String,
     on:         bool,
     hovered:    bool,
+    pressed:    bool,
     disabled:   bool,
     size:       SwitchSize,
     on_change:  Option<Box<dyn Fn(bool)>>,
@@ -66,6 +67,7 @@ impl Switch {
             label:      label.into(),
             on,
             hovered:    false,
+            pressed:    false,
             disabled:   false,
             size:       SwitchSize::Md,
             on_change:  None,
@@ -199,8 +201,18 @@ impl Widget for Switch {
             );
         }
 
-        let thumb_color = if self.disabled { theme.fg_muted } else { Color::WHITE };
-        renderer.fill_circle(Point::new(thumb_cx, thumb_cy), thumb_r, thumb_color);
+        // Thumb: hover brighten, active shrink
+        let thumb_color = if self.disabled {
+            theme.fg_muted
+        } else if self.pressed {
+            Color { r: 0.95, g: 0.95, b: 0.95, a: 1.0 }
+        } else if self.hovered {
+            Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }
+        } else {
+            Color { r: 0.95, g: 0.95, b: 0.95, a: 1.0 }
+        };
+        let thumb_r_draw = if self.pressed { thumb_r - 1.0 } else { thumb_r };
+        renderer.fill_circle(Point::new(thumb_cx, thumb_cy), thumb_r_draw, thumb_color);
 
         // Label
         if !self.label.is_empty() {
@@ -230,6 +242,7 @@ impl Widget for Switch {
             }
             Event::MouseDown { pos, button: MouseButton::Left } => {
                 if bounds.contains(pos.x, pos.y) {
+                    self.pressed = true;
                     self.on = !self.on;
                     if let Some(f) = &self.on_change { f(self.on); }
                     // Trigger animation
@@ -241,6 +254,15 @@ impl Widget for Switch {
                     }
                     EventStatus::Consumed
                 } else {
+                    EventStatus::Ignored
+                }
+            }
+            Event::MouseUp { pos, button: MouseButton::Left } => {
+                if bounds.contains(pos.x, pos.y) {
+                    self.pressed = false;
+                    EventStatus::Consumed
+                } else {
+                    self.pressed = false;
                     EventStatus::Ignored
                 }
             }
