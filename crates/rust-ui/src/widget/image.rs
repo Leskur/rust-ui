@@ -40,7 +40,7 @@ fn image_cache() -> &'static Mutex<HashMap<String, CacheEntry>> {
 
 // ── HTTP loader (pluggable by backend) ────────────────────────────────────────
 
-type HttpLoaderFn = Box<dyn Fn(&str) -> Result<Vec<u8>, String> + Send + Sync>;
+type HttpLoaderFn = Arc<dyn Fn(&str) -> Result<Vec<u8>, String> + Send + Sync>;
 
 fn http_loader() -> &'static Mutex<Option<HttpLoaderFn>> {
     static LOADER: OnceLock<Mutex<Option<HttpLoaderFn>>> = OnceLock::new();
@@ -61,7 +61,17 @@ fn http_loader() -> &'static Mutex<Option<HttpLoaderFn>> {
 /// });
 /// ```
 pub fn set_http_loader(f: impl Fn(&str) -> Result<Vec<u8>, String> + Send + Sync + 'static) {
-    *http_loader().lock().unwrap() = Some(Box::new(f));
+    *http_loader().lock().unwrap() = Some(Arc::new(f));
+}
+
+/// Fetch raw bytes from an HTTP/HTTPS URL using the registered loader.
+pub fn fetch_bytes(url: &str) -> Result<Vec<u8>, String> {
+    // Clone the Arc so we can call without holding the lock
+    let f = http_loader().lock().unwrap().clone();
+    match f {
+        Some(f) => f(url),
+        None => Err("No HTTP loader registered. Call rust_ui::widget::image::set_http_loader() from your backend.".into()),
+    }
 }
 
 // ── ObjectFit ─────────────────────────────────────────────────────────────────
@@ -131,13 +141,7 @@ impl Image {
 
     fn load_and_decode(src: &str) -> Result<DecodedImage, String> {
         let bytes: Vec<u8> = if src.starts_with("http://") || src.starts_with("https://") {
-            let loader = http_loader();
-            let loader = loader.lock().unwrap();
-            if let Some(f) = loader.as_ref() {
-                f(src)?
-            } else {
-                return Err("No HTTP loader registered. Call rust_ui::widget::image::set_http_loader() from your backend.".into());
-            }
+            fetch_bytes(src)?
         } else {
             std::fs::read(src).map_err(|e| format!("read file: {e}"))?
         };

@@ -5,4 +5,5 @@ pub mod image;
 pub mod input;
 pub mod layout;
 pub mod overview;
+pub mod svg;
 pub mod switch;
