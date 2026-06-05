@@ -11,24 +11,28 @@ mod pages;
 
 use rust_ui::prelude::*;
 use rust_ui::widget::{
-    container, sidebar, sidebar_group, sidebar_item, tab_view, Widget,
+    container, scroll_area, sidebar, sidebar_group, sidebar_item, tab_view, Widget,
 };
 use rust_ui::widget::TabView;
 use rust_ui::event::{Event, EventStatus};
 use rust_ui::render::{Rect, Renderer};
+use rust_ui::animation::AnimationScheduler;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 fn main() {
     let theme = Theme::dark();
+    let scheduler = Arc::new(Mutex::new(AnimationScheduler::new()));
 
     // ── Content pages ─────────────────────────────────────────────────────────
     let tabs = Rc::new(RefCell::new(tab_view(vec![
         ("Overview".to_string(),  pages::overview::page()),
         ("Button".to_string(),    pages::button::page()),
         ("Input".to_string(),     pages::input::page()),
-        ("Switch".to_string(),    pages::switch::page()),
+        ("Switch".to_string(),    pages::switch::page(scheduler.clone())),
         ("Container".to_string(), pages::container::page()),
+        ("Layout".to_string(),    pages::layout::page()),
     ]).active("Button")));
 
     // Thin wrapper so Rc<RefCell<TabView>> can be used as a Widget
@@ -59,18 +63,18 @@ fn main() {
                 sidebar_item("Input"),
                 sidebar_item("Switch"),
                 sidebar_item("Container"),
+                sidebar_item("Layout"),
             ],
         ),
         sidebar_group(
             "Coming soon",
             vec![
-                sidebar_item("Badge"),
-                sidebar_item("Spinner"),
-                sidebar_item("Select"),
                 sidebar_item("Slider"),
+                sidebar_item("Select"),
+                sidebar_item("Checkbox"),
                 sidebar_item("Dialog"),
-                sidebar_item("Tabs"),
-                sidebar_item("Table"),
+                sidebar_item("Badge"),
+                sidebar_item("Image"),
             ],
         ),
     ])
@@ -87,6 +91,40 @@ fn main() {
         inner: tabs,
     }).padding(32.0);
 
-    let root = rust_ui::row![nav, content].spacing(0.0);
-    rust_ui_wgpu::run("rust-ui Showcase", 1100, 720, root, theme);
+    let scrollable_content = scroll_area(content);
+
+    // Custom root that splits bounds: sidebar on left, scroll area fills the rest.
+    // This avoids Row's intrinsic_size-based allocation which would give ScrollArea
+    // zero width when it reports intrinsic_size (0, 0).
+    let sidebar_w = 220.0_f32;
+    struct AppRoot {
+        id:       String,
+        sidebar:  Box<dyn Widget>,
+        content:  Box<dyn Widget>,
+        sidebar_w: f32,
+    }
+    impl Widget for AppRoot {
+        fn id(&self) -> &str { &self.id }
+        fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
+            let sb = Rect::new(bounds.x, bounds.y, self.sidebar_w, bounds.height);
+            let cb = Rect::new(bounds.x + self.sidebar_w, bounds.y, (bounds.width - self.sidebar_w).max(0.0), bounds.height);
+            self.sidebar.draw(renderer, sb, theme);
+            self.content.draw(renderer, cb, theme);
+        }
+        fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
+            let sb = Rect::new(bounds.x, bounds.y, self.sidebar_w, bounds.height);
+            let cb = Rect::new(bounds.x + self.sidebar_w, bounds.y, (bounds.width - self.sidebar_w).max(0.0), bounds.height);
+            let s1 = self.sidebar.handle_event(event, sb);
+            if s1 == EventStatus::Consumed { return EventStatus::Consumed; }
+            self.content.handle_event(event, cb)
+        }
+    }
+
+    let root = AppRoot {
+        id:        "app-root".to_string(),
+        sidebar:   Box::new(nav),
+        content:   Box::new(scrollable_content),
+        sidebar_w,
+    };
+    rust_ui_wgpu::run_with_scheduler("rust-ui Showcase", 1100, 720, root, theme, scheduler);
 }

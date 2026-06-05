@@ -39,12 +39,38 @@ impl Row {
     fn child_rects(&self, bounds: Rect, theme: &Theme) -> Vec<Rect> {
         let inner_x = bounds.x + self.padding;
         let inner_y = bounds.y + self.padding;
+        let available_w = bounds.width - self.padding * 2.0;
+        let available_h = bounds.height - self.padding * 2.0;
+
+        // First pass: measure fixed children and count flex spacers
+        let mut sizes: Vec<(f32, f32)> = self.children.iter()
+            .map(|c| c.intrinsic_size(theme))
+            .collect();
+        let spacer_count = self.children.iter().filter(|c| c.is_spacer()).count();
+        let spacing_total = if self.children.is_empty() { 0.0 }
+            else { self.spacing * (self.children.len() - 1) as f32 };
+        let fixed_w: f32 = self.children.iter().zip(sizes.iter())
+            .filter(|(c, _)| !c.is_spacer())
+            .map(|(_, (w, _))| w)
+            .sum::<f32>() + spacing_total;
+        let flex_w = if spacer_count > 0 {
+            ((available_w - fixed_w) / spacer_count as f32).max(0.0)
+        } else { 0.0 };
+
+        // Apply flex width to spacers
+        for (child, size) in self.children.iter().zip(sizes.iter_mut()) {
+            if child.is_spacer() {
+                size.0 = flex_w;
+            }
+        }
+
+        // Second pass: place children
         let mut x = inner_x;
         let mut rects = Vec::with_capacity(self.children.len());
-        for child in &self.children {
-            let (w, h) = child.intrinsic_size(theme);
-            rects.push(Rect::new(x, inner_y, w, h));
-            x += w + self.spacing;
+        for (i, (w, h)) in sizes.iter().enumerate() {
+            let h = if *h == 0.0 { available_h } else { *h };
+            rects.push(Rect::new(x, inner_y, *w, h));
+            x += w + if i + 1 < sizes.len() { self.spacing } else { 0.0 };
         }
         rects
     }
@@ -53,6 +79,18 @@ impl Row {
 impl Widget for Row {
     fn id(&self) -> &str { &self.id }
     fn is_container(&self) -> bool { true }
+
+    fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
+        let spacing_total = if self.children.is_empty() { 0.0 }
+            else { self.spacing * (self.children.len() - 1) as f32 };
+        let total_w: f32 = self.children.iter()
+            .map(|c| c.intrinsic_size(theme).0)
+            .sum::<f32>() + spacing_total;
+        let max_h: f32 = self.children.iter()
+            .map(|c| c.intrinsic_size(theme).1)
+            .fold(0.0_f32, f32::max);
+        (total_w + self.padding * 2.0, max_h + self.padding * 2.0)
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         let rects = self.child_rects(bounds, theme);

@@ -11,4 +11,4 @@ pub mod text;
 pub mod window;
 
 pub use renderer::VelloRenderer;
-pub use window::run;
+pub use window::{run, run_with_scheduler};

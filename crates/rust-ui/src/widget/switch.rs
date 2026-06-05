@@ -13,6 +13,7 @@ use crate::event::{Event, EventStatus, MouseButton};
 use crate::render::{Point, Rect, Renderer, TextOptions};
 use crate::style::{CursorStyle, Theme};
 use crate::widget::Widget;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SwitchSize {
@@ -45,28 +46,30 @@ impl SwitchSize {
     }
 }
 
-const ANIM_DUR: f32 = 0.18; // seconds
+const ANIM_DUR: f32 = 0.35; // seconds
 
 pub struct Switch {
-    id:        String,
-    label:     String,
-    on:        bool,
-    hovered:   bool,
-    disabled:  bool,
-    size:      SwitchSize,
-    on_change: Option<Box<dyn Fn(bool)>>,
+    id:         String,
+    label:      String,
+    on:         bool,
+    hovered:    bool,
+    disabled:   bool,
+    size:       SwitchSize,
+    on_change:  Option<Box<dyn Fn(bool)>>,
+    scheduler:  Option<Arc<Mutex<AnimationScheduler>>>,
 }
 
 impl Switch {
     pub fn new(label: impl Into<String>, on: bool) -> Self {
         Self {
-            id:        uuid(),
-            label:     label.into(),
+            id:         uuid(),
+            label:      label.into(),
             on,
-            hovered:   false,
-            disabled:  false,
-            size:      SwitchSize::Md,
-            on_change: None,
+            hovered:    false,
+            disabled:   false,
+            size:       SwitchSize::Md,
+            on_change:  None,
+            scheduler:  None,
         }
     }
 
@@ -82,6 +85,11 @@ impl Switch {
 
     pub fn size(mut self, size: SwitchSize) -> Self {
         self.size = size;
+        self
+    }
+
+    pub fn scheduler(mut self, scheduler: Arc<Mutex<AnimationScheduler>>) -> Self {
+        self.scheduler = Some(scheduler);
         self
     }
 
@@ -156,8 +164,17 @@ impl Widget for Switch {
     fn id(&self) -> &str { &self.id }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
-        // Fallback draw without scheduler (instant, no animation)
-        let progress = if self.on { 1.0_f32 } else { 0.0 };
+        // Use animation if scheduler is available, otherwise instant
+        let progress = if let Some(scheduler) = &self.scheduler {
+            if let Ok(sched) = scheduler.lock() {
+                sched.get(&self.id, "progress").unwrap_or(if self.on { 1.0 } else { 0.0 })
+            } else {
+                if self.on { 1.0_f32 } else { 0.0 }
+            }
+        } else {
+            if self.on { 1.0_f32 } else { 0.0 }
+        };
+
         let track_w = self.size.track_width();
         let track_h = self.size.track_height();
         let thumb_r = self.size.thumb_radius();
@@ -172,8 +189,34 @@ impl Widget for Switch {
         let x_on  = bounds.x + track_w - track_h / 2.0;
         let thumb_cx = x_off + (x_on - x_off) * progress;
         let thumb_cy = bounds.y + bounds.height / 2.0;
+
+        // Shadow only when not disabled
+        if !self.disabled {
+            renderer.fill_circle(
+                Point::new(thumb_cx, thumb_cy),
+                thumb_r + 1.5,
+                Color { r: 0.0, g: 0.0, b: 0.0, a: 0.15 },
+            );
+        }
+
         let thumb_color = if self.disabled { theme.fg_muted } else { Color::WHITE };
         renderer.fill_circle(Point::new(thumb_cx, thumb_cy), thumb_r, thumb_color);
+
+        // Label
+        if !self.label.is_empty() {
+            let text_x = bounds.x + track_w + 10.0;
+            let label_color = if self.disabled { theme.fg_muted } else { if self.on { theme.fg } else { theme.fg_muted } };
+            let opts = TextOptions {
+                font_size: theme.font_size_md,
+                color: label_color,
+                ..Default::default()
+            };
+            renderer.draw_text(
+                &self.label,
+                Point::new(text_x, bounds.y + (bounds.height - theme.font_size_md) / 2.0),
+                &opts,
+            );
+        }
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
@@ -185,10 +228,17 @@ impl Widget for Switch {
                 self.hovered = bounds.contains(pos.x, pos.y);
                 EventStatus::Ignored
             }
-            Event::MouseClick { pos, button: MouseButton::Left } => {
+            Event::MouseDown { pos, button: MouseButton::Left } => {
                 if bounds.contains(pos.x, pos.y) {
                     self.on = !self.on;
                     if let Some(f) = &self.on_change { f(self.on); }
+                    // Trigger animation
+                    if let Some(scheduler) = &self.scheduler {
+                        if let Ok(mut sched) = scheduler.lock() {
+                            let target = if self.on { 1.0 } else { 0.0 };
+                            sched.animate_to(&self.id, "progress", target, Easing::EaseOut, ANIM_DUR);
+                        }
+                    }
                     EventStatus::Consumed
                 } else {
                     EventStatus::Ignored

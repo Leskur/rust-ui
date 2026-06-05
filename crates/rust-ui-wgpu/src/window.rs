@@ -31,6 +31,20 @@ pub fn run(
     root:   impl Widget + 'static,
     theme:  Theme,
 ) {
+    let scheduler = std::sync::Arc::new(std::sync::Mutex::new(AnimationScheduler::new()));
+    run_with_scheduler(title, width, height, root, theme, scheduler);
+}
+
+/// Run a rust-ui application with a custom AnimationScheduler.
+/// This allows widgets to trigger animations that are rendered by the scheduler.
+pub fn run_with_scheduler(
+    title:     &str,
+    width:     u32,
+    height:    u32,
+    root:      impl Widget + 'static,
+    theme:     Theme,
+    scheduler: std::sync::Arc<std::sync::Mutex<AnimationScheduler>>,
+) {
     let event_loop = EventLoop::new().expect("Failed to create event loop");
     let mut app = App {
         title:      title.to_string(),
@@ -38,7 +52,7 @@ pub fn run(
         height,
         root:       Box::new(root),
         theme,
-        scheduler:  AnimationScheduler::new(),
+        scheduler,
         state:      None,
         cursor_pos: Point::new(0.0, 0.0),
         modifiers:  winit::event::Modifiers::default(),
@@ -66,7 +80,7 @@ struct App {
     height:     u32,
     root:       Box<dyn Widget>,
     theme:      Theme,
-    scheduler:  AnimationScheduler,
+    scheduler:  std::sync::Arc<std::sync::Mutex<AnimationScheduler>>,
     state:      Option<GpuState<'static>>,
     cursor_pos: Point,
     modifiers:  winit::event::Modifiers,
@@ -234,6 +248,18 @@ impl ApplicationHandler for App {
                 }
             }
 
+            WindowEvent::MouseWheel { delta, .. } => {
+                use winit::event::MouseScrollDelta;
+                let (dx, dy) = match delta {
+                    MouseScrollDelta::LineDelta(x, y) => (x * 20.0, y * 20.0),
+                    MouseScrollDelta::PixelDelta(pos) => (pos.x as f32, pos.y as f32),
+                };
+                let pos = self.cursor_pos;
+                let bounds = Rect::new(0.0, 0.0, state.width as f32, state.height as f32);
+                self.root.handle_event(&UiEvent::Scroll { pos, delta_x: dx, delta_y: -dy }, bounds);
+                state.window.request_redraw();
+            }
+
             WindowEvent::MouseInput { state: btn_state, button, .. } => {
                 use winit::event::MouseButton;
                 let rb = match button {
@@ -270,8 +296,10 @@ impl ApplicationHandler for App {
 
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
         if let Some(state) = &self.state {
-            if self.scheduler.has_active() {
-                state.window.request_redraw();
+            if let Ok(sched) = self.scheduler.lock() {
+                if sched.has_active() {
+                    state.window.request_redraw();
+                }
             }
         }
     }
@@ -281,10 +309,12 @@ impl App {
     fn draw_frame(
         root:      &mut Box<dyn Widget>,
         theme:     &Theme,
-        scheduler: &mut AnimationScheduler,
+        scheduler: &std::sync::Arc<std::sync::Mutex<AnimationScheduler>>,
         state:     &mut GpuState,
     ) {
-        scheduler.tick(1.0 / 60.0);
+        if let Ok(mut sched) = scheduler.lock() {
+            sched.tick(1.0 / 60.0);
+        }
 
         let mut scene = Scene::new();
         let bounds = Rect::new(0.0, 0.0, state.width as f32, state.height as f32);

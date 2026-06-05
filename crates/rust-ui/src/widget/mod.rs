@@ -6,9 +6,13 @@
 pub mod button;
 pub mod column;
 pub mod container;
+pub mod divider;
 pub mod input;
 pub mod row;
+pub mod scroll_area;
 pub mod sidebar;
+pub mod spacer;
+pub mod stack;
 pub mod switch;
 pub mod tab_view;
 pub mod text;
@@ -16,9 +20,13 @@ pub mod text;
 pub use button::{button, Button};
 pub use column::{column, Column};
 pub use container::{container, Container};
+pub use divider::{divider, Divider, DividerAxis};
 pub use input::{input, Input, InputSize};
 pub use row::{row, Row};
+pub use scroll_area::{scroll_area, ScrollArea};
 pub use sidebar::{sidebar, sidebar_group, sidebar_item, Sidebar, SidebarGroup, SidebarItem};
+pub use spacer::{spacer, Spacer};
+pub use stack::{stack, Stack, Alignment};
 pub use switch::{switch, Switch, SwitchSize};
 pub use tab_view::{tab_view, TabView};
 pub use text::{text, Text};
@@ -58,4 +66,8 @@ pub trait Widget {
     fn cursor_at(&self, _pos: (f32, f32), _bounds: Rect) -> CursorStyle {
         CursorStyle::Default
     }
+
+    /// Returns `true` for flexible `Spacer` instances that should expand to
+    /// fill remaining space in a Row or Column layout pass.
+    fn is_spacer(&self) -> bool { false }
 }
