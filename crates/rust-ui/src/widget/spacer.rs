@@ -11,7 +11,7 @@ use crate::style::Theme;
 use crate::widget::Widget;
 
 pub struct Spacer {
-    id:   String,
+    id: String,
     /// Fixed size. `None` means "expand to fill remaining space" (requires
     /// Row/Column to perform a flex-grow pass).
     pub(crate) fixed: Option<f32>,
@@ -19,7 +19,10 @@ pub struct Spacer {
 
 impl Spacer {
     pub fn new() -> Self {
-        Self { id: uuid(), fixed: None }
+        Self {
+            id: uuid(),
+            fixed: None,
+        }
     }
 
     /// Force a fixed pixel size (width in Row, height in Column).
@@ -30,11 +33,15 @@ impl Spacer {
 }
 
 impl Default for Spacer {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Widget for Spacer {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn draw(&self, _renderer: &mut dyn Renderer, _bounds: Rect, _theme: &Theme) {}
 
@@ -47,10 +54,14 @@ impl Widget for Spacer {
         (s, s)
     }
 
-    fn is_spacer(&self) -> bool { self.fixed.is_none() }
+    fn is_spacer(&self) -> bool {
+        self.fixed.is_none()
+    }
 }
 
-pub fn spacer() -> Spacer { Spacer::new() }
+pub fn spacer() -> Spacer {
+    Spacer::new()
+}
 
 fn uuid() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};

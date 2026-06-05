@@ -19,10 +19,10 @@ use crate::widget::Widget;
 /// .padding(16.0);
 /// ```
 pub struct Column {
-    id:       String,
+    id: String,
     children: Vec<Box<dyn Widget>>,
-    spacing:  f32,
-    padding:  f32,
+    spacing: f32,
+    padding: f32,
 }
 
 impl Column {
@@ -35,34 +35,53 @@ impl Column {
         }
     }
 
-    pub fn spacing(mut self, s: f32) -> Self { self.spacing = s; self }
-    pub fn padding(mut self, p: f32) -> Self { self.padding = p; self }
+    pub fn spacing(mut self, s: f32) -> Self {
+        self.spacing = s;
+        self
+    }
+    pub fn padding(mut self, p: f32) -> Self {
+        self.padding = p;
+        self
+    }
 }
 
 impl Column {
     fn child_rects(&self, bounds: Rect, theme: &Theme) -> Vec<Rect> {
         let inner_x = bounds.x + self.padding;
         let inner_y = bounds.y + self.padding;
-        let inner_w = bounds.width  - self.padding * 2.0;
+        let inner_w = bounds.width - self.padding * 2.0;
         let available_h = bounds.height - self.padding * 2.0;
 
         // First pass: measure fixed children
-        let mut heights: Vec<f32> = self.children.iter()
+        let mut heights: Vec<f32> = self
+            .children
+            .iter()
             .map(|c| c.intrinsic_size(theme).1)
             .collect();
         let spacer_count = self.children.iter().filter(|c| c.is_spacer()).count();
-        let spacing_total = if self.children.is_empty() { 0.0 }
-            else { self.spacing * (self.children.len() - 1) as f32 };
-        let fixed_h: f32 = self.children.iter().zip(heights.iter())
+        let spacing_total = if self.children.is_empty() {
+            0.0
+        } else {
+            self.spacing * (self.children.len() - 1) as f32
+        };
+        let fixed_h: f32 = self
+            .children
+            .iter()
+            .zip(heights.iter())
             .filter(|(c, _)| !c.is_spacer())
             .map(|(_, h)| h)
-            .sum::<f32>() + spacing_total;
+            .sum::<f32>()
+            + spacing_total;
         let flex_h = if spacer_count > 0 {
             ((available_h - fixed_h) / spacer_count as f32).max(0.0)
-        } else { 0.0 };
+        } else {
+            0.0
+        };
 
         for (child, h) in self.children.iter().zip(heights.iter_mut()) {
-            if child.is_spacer() { *h = flex_h; }
+            if child.is_spacer() {
+                *h = flex_h;
+            }
         }
 
         // Second pass: place children
@@ -70,25 +89,41 @@ impl Column {
         let mut rects = Vec::with_capacity(self.children.len());
         for (i, h) in heights.iter().enumerate() {
             rects.push(Rect::new(inner_x, y, inner_w, *h));
-            y += h + if i + 1 < heights.len() { self.spacing } else { 0.0 };
+            y += h + if i + 1 < heights.len() {
+                self.spacing
+            } else {
+                0.0
+            };
         }
         rects
     }
 }
 
 impl Widget for Column {
-    fn id(&self) -> &str { &self.id }
-    fn is_container(&self) -> bool { true }
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn is_container(&self) -> bool {
+        true
+    }
 
     fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
-        let spacing_total = if self.children.is_empty() { 0.0 }
-            else { self.spacing * (self.children.len() - 1) as f32 };
-        let max_w: f32 = self.children.iter()
+        let spacing_total = if self.children.is_empty() {
+            0.0
+        } else {
+            self.spacing * (self.children.len() - 1) as f32
+        };
+        let max_w: f32 = self
+            .children
+            .iter()
             .map(|c| c.intrinsic_size(theme).0)
             .fold(0.0_f32, f32::max);
-        let total_h: f32 = self.children.iter()
+        let total_h: f32 = self
+            .children
+            .iter()
             .map(|c| c.intrinsic_size(theme).1)
-            .sum::<f32>() + spacing_total;
+            .sum::<f32>()
+            + spacing_total;
         (max_w + self.padding * 2.0, total_h + self.padding * 2.0)
     }
 
@@ -97,34 +132,77 @@ impl Widget for Column {
         for (child, cb) in self.children.iter().zip(rects.iter()) {
             child.draw(renderer, *cb, theme);
         }
+        // Draw overlays last so popups (e.g. Select menu) aren't occluded.
+        for (child, cb) in self.children.iter().zip(rects.iter()) {
+            child.draw_overlay(renderer, *cb, theme);
+        }
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
         let theme = Theme::default();
         let rects = self.child_rects(bounds, &theme);
-        // Mouse events must be broadcast to ALL children so every widget can
-        // update its own hover/focus state (e.g. an Input unfocuses itself when
-        // clicked outside). Keyboard events stop at the first consumer.
-        let broadcast = matches!(
-            event,
-            Event::MouseMove { .. } | Event::MouseDown { .. } | Event::MouseUp { .. }
-        );
-        let mut result = EventStatus::Ignored;
-        for (child, cb) in self.children.iter_mut().zip(rects.iter()) {
-            let s = child.handle_event(event, *cb);
-            if s == EventStatus::Consumed {
-                result = EventStatus::Consumed;
-                if !broadcast { return EventStatus::Consumed; }
+        match event {
+            Event::MouseMove { .. } => {
+                let mut result = EventStatus::Ignored;
+                for (child, cb) in self.children.iter_mut().zip(rects.iter()) {
+                    if child.handle_event(event, *cb) == EventStatus::Consumed {
+                        result = EventStatus::Consumed;
+                    }
+                }
+                result
+            }
+            Event::MouseDown { .. } | Event::MouseUp { .. } => {
+                let mut result = EventStatus::Ignored;
+                for (child, cb) in self.children.iter_mut().zip(rects.iter()) {
+                    if child.handle_event(event, *cb) == EventStatus::Consumed {
+                        result = EventStatus::Consumed;
+                    }
+                }
+                result
+            }
+            Event::MouseClick { pos, .. }
+            | Event::MouseDoubleClick { pos, .. }
+            | Event::Scroll { pos, .. } => {
+                for (child, cb) in self.children.iter_mut().zip(rects.iter()) {
+                    if child.hit_test((pos.x, pos.y), *cb, &theme) {
+                        let s = child.handle_event(event, *cb);
+                        if s == EventStatus::Consumed {
+                            return EventStatus::Consumed;
+                        }
+                    }
+                }
+                EventStatus::Ignored
+            }
+            _ => {
+                for (child, cb) in self.children.iter_mut().zip(rects.iter()) {
+                    if child.handle_event(event, *cb) == EventStatus::Consumed {
+                        return EventStatus::Consumed;
+                    }
+                }
+                EventStatus::Ignored
             }
         }
-        result
     }
 
     fn layout_children<'a>(&'a self, bounds: Rect, theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
         let rects = self.child_rects(bounds, theme);
-        self.children.iter()
+        self.children
+            .iter()
             .zip(rects.into_iter())
             .map(|(c, r)| (c.as_ref() as &dyn Widget, r))
+            .collect()
+    }
+
+    fn layout_children_mut<'a>(
+        &'a mut self,
+        bounds: Rect,
+        theme: &Theme,
+    ) -> Vec<(&'a mut dyn Widget, Rect)> {
+        let rects = self.child_rects(bounds, theme);
+        self.children
+            .iter_mut()
+            .zip(rects.into_iter())
+            .map(|(c, r)| (c.as_mut() as &mut dyn Widget, r))
             .collect()
     }
 }

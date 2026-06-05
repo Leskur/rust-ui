@@ -28,7 +28,7 @@ fn to_rounded_rect(r: Rect, corners: Corners) -> RoundedRect {
     let rect = kurbo::Rect::new(
         r.x as f64,
         r.y as f64,
-        (r.x + r.width)  as f64,
+        (r.x + r.width) as f64,
         (r.y + r.height) as f64,
     );
     // Use top-left radius as uniform approximation for now
@@ -39,10 +39,10 @@ fn to_rounded_rect(r: Rect, corners: Corners) -> RoundedRect {
 // ── Renderer ─────────────────────────────────────────────────────────────────
 
 pub struct VelloRenderer<'a> {
-    scene:       &'a mut Scene,
+    scene: &'a mut Scene,
     text_engine: &'a mut TextEngine,
     offset_stack: Vec<(f32, f32)>,
-    clip_stack:   Vec<Rect>,
+    clip_stack: Vec<Rect>,
 }
 
 impl<'a> VelloRenderer<'a> {
@@ -51,7 +51,7 @@ impl<'a> VelloRenderer<'a> {
             scene,
             text_engine,
             offset_stack: vec![(0.0, 0.0)],
-            clip_stack:   vec![],
+            clip_stack: vec![],
         }
     }
 
@@ -98,10 +98,7 @@ impl<'a> Renderer for VelloRenderer<'a> {
 
     fn fill_circle(&mut self, center: Point, radius: f32, color: Color) {
         let center = self.offset_point(center);
-        let circle = kurbo::Circle::new(
-            (center.x as f64, center.y as f64),
-            radius as f64,
-        );
+        let circle = kurbo::Circle::new((center.x as f64, center.y as f64), radius as f64);
         self.scene.fill(
             Fill::NonZero,
             Affine::IDENTITY,
@@ -113,11 +110,8 @@ impl<'a> Renderer for VelloRenderer<'a> {
 
     fn draw_line(&mut self, from: Point, to: Point, color: Color, width: f32) {
         let from = self.offset_point(from);
-        let to   = self.offset_point(to);
-        let line = kurbo::Line::new(
-            (from.x as f64, from.y as f64),
-            (to.x   as f64, to.y   as f64),
-        );
+        let to = self.offset_point(to);
+        let line = kurbo::Line::new((from.x as f64, from.y as f64), (to.x as f64, to.y as f64));
         let stroke = Stroke::new(width as f64);
         self.scene.stroke(
             &stroke,
@@ -130,7 +124,9 @@ impl<'a> Renderer for VelloRenderer<'a> {
 
     fn draw_text(&mut self, text: &str, pos: Point, opts: &TextOptions) -> (f32, f32) {
         let pos = self.offset_point(pos);
-        let (pixels, w, h, _ascent) = self.text_engine.rasterize(text, opts.font_size, opts.color, opts.max_width);
+        let (pixels, w, h, _ascent) =
+            self.text_engine
+                .rasterize(text, opts.font_size, opts.color, opts.max_width);
 
         // Draw each glyph pixel as a tiny filled rectangle (1×1)
         // This is the simplest correct approach; a production impl would
@@ -173,10 +169,11 @@ impl<'a> Renderer for VelloRenderer<'a> {
         let clip_shape = kurbo::Rect::new(
             rect.x as f64,
             rect.y as f64,
-            (rect.x + rect.width)  as f64,
+            (rect.x + rect.width) as f64,
             (rect.y + rect.height) as f64,
         );
-        self.scene.push_layer(peniko::Mix::Clip, 1.0, Affine::IDENTITY, &clip_shape);
+        self.scene
+            .push_layer(peniko::Mix::Clip, 1.0, Affine::IDENTITY, &clip_shape);
     }
 
     fn pop_clip(&mut self) {
@@ -201,17 +198,18 @@ impl<'a> Renderer for VelloRenderer<'a> {
         let (ox, oy) = self.current_offset();
         let bez_path = parse_svg_path(path_data);
         // Icon coordinates are 24x24, so scale first then translate
-        let affine = Affine::scale(scale as f64)
-            * Affine::translate(((tx + ox) as f64, (ty + oy) as f64));
+        let affine =
+            Affine::scale(scale as f64) * Affine::translate(((tx + ox) as f64, (ty + oy) as f64));
         let brush = Brush::Solid(to_vello_color(color));
-        self.scene.fill(Fill::NonZero, affine, &brush, None, &bez_path);
+        self.scene
+            .fill(Fill::NonZero, affine, &brush, None, &bez_path);
     }
 
     fn draw_image(&mut self, data: &[u8], src_width: u32, src_height: u32, dest: Rect) {
         let dest = self.offset_rect(dest);
         let blob = peniko::Blob::new(std::sync::Arc::new(data.to_vec()));
         let image = peniko::Image::new(blob, peniko::ImageFormat::Rgba8, src_width, src_height);
-        let scale_x = dest.width  as f64 / src_width  as f64;
+        let scale_x = dest.width as f64 / src_width as f64;
         let scale_y = dest.height as f64 / src_height as f64;
         let transform = Affine::translate((dest.x as f64, dest.y as f64))
             * Affine::scale_non_uniform(scale_x, scale_y);
@@ -244,11 +242,14 @@ fn parse_svg_path(d: &str) -> vello::kurbo::BezPath {
                 let x = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 let y = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 if token == "M" {
-                    cx = x; cy = y;
+                    cx = x;
+                    cy = y;
                 } else {
-                    cx += x; cy += y;
+                    cx += x;
+                    cy += y;
                 }
-                start_x = cx; start_y = cy;
+                start_x = cx;
+                start_y = cy;
                 bez_path.move_to((cx, cy));
                 has_move = true;
             }
@@ -260,9 +261,11 @@ fn parse_svg_path(d: &str) -> vello::kurbo::BezPath {
                 let x = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 let y = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 if token == "L" {
-                    cx = x; cy = y;
+                    cx = x;
+                    cy = y;
                 } else {
-                    cx += x; cy += y;
+                    cx += x;
+                    cy += y;
                 }
                 bez_path.line_to((cx, cy));
             }
@@ -278,15 +281,18 @@ fn parse_svg_path(d: &str) -> vello::kurbo::BezPath {
                 let x = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 let y = tokens.next().and_then(|s| s.parse().ok()).unwrap_or(0.0);
                 if token == "C" {
-                    cx = x; cy = y;
+                    cx = x;
+                    cy = y;
                 } else {
-                    cx += x; cy += y;
+                    cx += x;
+                    cy += y;
                 }
                 bez_path.curve_to((x1, y1), (x2, y2), (cx, cy));
             }
             "Z" | "z" => {
                 bez_path.close_path();
-                cx = start_x; cy = start_y;
+                cx = start_x;
+                cy = start_y;
             }
             _ => {}
         }

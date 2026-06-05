@@ -21,8 +21,8 @@ use crate::widget::Widget;
 
 #[derive(Clone)]
 pub struct DecodedImage {
-    pub data:   Arc<Vec<u8>>, // RGBA8 bytes
-    pub width:  u32,
+    pub data: Arc<Vec<u8>>, // RGBA8 bytes
+    pub width: u32,
     pub height: u32,
 }
 
@@ -93,12 +93,12 @@ pub enum ObjectFit {
 // ── Image widget ──────────────────────────────────────────────────────────────
 
 pub struct Image {
-    id:      String,
-    src:     String,
-    width:   Option<f32>,
-    height:  Option<f32>,
-    fit:     ObjectFit,
-    radius:  f32,
+    id: String,
+    src: String,
+    width: Option<f32>,
+    height: Option<f32>,
+    fit: ObjectFit,
+    radius: f32,
 }
 
 impl Image {
@@ -106,19 +106,31 @@ impl Image {
         let src = src.into();
         Self::spawn_load(src.clone());
         Self {
-            id:     uuid(),
+            id: uuid(),
             src,
-            width:  None,
+            width: None,
             height: None,
-            fit:    ObjectFit::default(),
+            fit: ObjectFit::default(),
             radius: 0.0,
         }
     }
 
-    pub fn width(mut self, w: f32)  -> Self { self.width  = Some(w); self }
-    pub fn height(mut self, h: f32) -> Self { self.height = Some(h); self }
-    pub fn fit(mut self, f: ObjectFit) -> Self { self.fit = f; self }
-    pub fn radius(mut self, r: f32) -> Self { self.radius = r; self }
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = Some(w);
+        self
+    }
+    pub fn height(mut self, h: f32) -> Self {
+        self.height = Some(h);
+        self
+    }
+    pub fn fit(mut self, f: ObjectFit) -> Self {
+        self.fit = f;
+        self
+    }
+    pub fn radius(mut self, r: f32) -> Self {
+        self.radius = r;
+        self
+    }
 
     /// Spawn a background thread to load + decode the image (if not already cached).
     fn spawn_load(src: String) {
@@ -133,7 +145,7 @@ impl Image {
             let result = Self::load_and_decode(&src);
             let entry = match result {
                 Ok(img) => CacheEntry::Loaded(img),
-                Err(e)  => CacheEntry::Error(e),
+                Err(e) => CacheEntry::Error(e),
             };
             image_cache().lock().unwrap().insert(src, entry);
         });
@@ -151,8 +163,8 @@ impl Image {
             .into_rgba8();
         let (w, h) = img.dimensions();
         Ok(DecodedImage {
-            data:   Arc::new(img.into_raw()),
-            width:  w,
+            data: Arc::new(img.into_raw()),
+            width: w,
             height: h,
         })
     }
@@ -166,31 +178,19 @@ impl Image {
             ObjectFit::None => {
                 let w = iw.min(bw);
                 let h = ih.min(bh);
-                Rect::new(
-                    bounds.x + (bw - w) / 2.0,
-                    bounds.y + (bh - h) / 2.0,
-                    w, h,
-                )
+                Rect::new(bounds.x + (bw - w) / 2.0, bounds.y + (bh - h) / 2.0, w, h)
             }
             ObjectFit::Contain => {
                 let scale = (bw / iw).min(bh / ih);
                 let w = iw * scale;
                 let h = ih * scale;
-                Rect::new(
-                    bounds.x + (bw - w) / 2.0,
-                    bounds.y + (bh - h) / 2.0,
-                    w, h,
-                )
+                Rect::new(bounds.x + (bw - w) / 2.0, bounds.y + (bh - h) / 2.0, w, h)
             }
             ObjectFit::Cover => {
                 let scale = (bw / iw).max(bh / ih);
                 let w = iw * scale;
                 let h = ih * scale;
-                Rect::new(
-                    bounds.x + (bw - w) / 2.0,
-                    bounds.y + (bh - h) / 2.0,
-                    w, h,
-                )
+                Rect::new(bounds.x + (bw - w) / 2.0, bounds.y + (bh - h) / 2.0, w, h)
             }
         }
     }
@@ -201,7 +201,9 @@ impl Image {
 }
 
 impl Widget for Image {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn intrinsic_size(&self, _theme: &Theme) -> (f32, f32) {
         let w = self.width.unwrap_or(120.0);
@@ -225,11 +227,11 @@ impl Widget for Image {
                     renderer.pop_clip();
                 }
             }
-            Some(CacheEntry::Error(_)) => {
+            Some(CacheEntry::Error(err)) => {
                 // Error placeholder: grey box with an ✕
                 renderer.fill_rect(bounds, theme.bg_elevated, Corners::all(self.radius));
                 renderer.stroke_rect(bounds, theme.border, 1.0, Corners::all(self.radius));
-                let cx = bounds.x + bounds.width  / 2.0 - 8.0;
+                let cx = bounds.x + bounds.width / 2.0 - 8.0;
                 let cy = bounds.y + bounds.height / 2.0 - 7.0;
                 let opts = crate::render::TextOptions {
                     font_size: 14.0,
@@ -237,6 +239,8 @@ impl Widget for Image {
                     ..Default::default()
                 };
                 renderer.draw_text("✕", crate::render::Point::new(cx, cy), &opts);
+                // Read `err` so it's not optimized away; backends can surface it later.
+                let _ = err;
             }
             _ => {
                 // Loading placeholder: pulsing grey box

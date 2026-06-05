@@ -9,7 +9,7 @@
 
 use crate::animation::{AnimationScheduler, Easing};
 use crate::color::Color;
-use crate::event::{Event, EventStatus, MouseButton};
+use crate::event::{Event, EventStatus, Key, MouseButton};
 use crate::render::{Point, Rect, Renderer, TextOptions};
 use crate::style::{CursorStyle, Theme};
 use crate::widget::Widget;
@@ -49,29 +49,31 @@ impl SwitchSize {
 const ANIM_DUR: f32 = 0.35; // seconds
 
 pub struct Switch {
-    id:         String,
-    label:      String,
-    on:         bool,
-    hovered:    bool,
-    pressed:    bool,
-    disabled:   bool,
-    size:       SwitchSize,
-    on_change:  Option<Box<dyn Fn(bool)>>,
-    scheduler:  Option<Arc<Mutex<AnimationScheduler>>>,
+    id: String,
+    label: String,
+    on: bool,
+    hovered: bool,
+    pressed: bool,
+    focused: bool,
+    disabled: bool,
+    size: SwitchSize,
+    on_change: Option<Box<dyn Fn(bool)>>,
+    scheduler: Option<Arc<Mutex<AnimationScheduler>>>,
 }
 
 impl Switch {
     pub fn new(label: impl Into<String>, on: bool) -> Self {
         Self {
-            id:         uuid(),
-            label:      label.into(),
+            id: uuid(),
+            label: label.into(),
             on,
-            hovered:    false,
-            pressed:    false,
-            disabled:   false,
-            size:       SwitchSize::Md,
-            on_change:  None,
-            scheduler:  None,
+            hovered: false,
+            pressed: false,
+            focused: false,
+            disabled: false,
+            size: SwitchSize::Md,
+            on_change: None,
+            scheduler: None,
         }
     }
 
@@ -108,18 +110,34 @@ impl Switch {
         theme: &Theme,
         scheduler: &AnimationScheduler,
     ) {
-        let progress = scheduler.get(&self.id, "progress").unwrap_or(if self.on { 1.0 } else { 0.0 });
+        let progress =
+            scheduler
+                .get(&self.id, "progress")
+                .unwrap_or(if self.on { 1.0 } else { 0.0 });
 
         let track_w = self.size.track_width();
         let track_h = self.size.track_height();
         let thumb_r = self.size.thumb_radius();
 
         // Track background: lerp grey → accent
-        let off_color = if self.disabled { theme.border } else { theme.bg_elevated };
-        let on_color = if self.disabled { theme.border } else { theme.accent };
+        let off_color = if self.disabled {
+            theme.border
+        } else {
+            theme.bg_elevated
+        };
+        let on_color = if self.disabled {
+            theme.border
+        } else {
+            theme.accent
+        };
         let track_color = off_color.lerp(on_color, progress);
 
-        let track_rect = Rect::new(bounds.x, bounds.y + (bounds.height - track_h) / 2.0, track_w, track_h);
+        let track_rect = Rect::new(
+            bounds.x,
+            bounds.y + (bounds.height - track_h) / 2.0,
+            track_w,
+            track_h,
+        );
         renderer.fill_rect(
             track_rect,
             track_color,
@@ -128,7 +146,7 @@ impl Switch {
 
         // Thumb position
         let x_off = bounds.x + track_h / 2.0;
-        let x_on  = bounds.x + track_w - track_h / 2.0;
+        let x_on = bounds.x + track_w - track_h / 2.0;
         let thumb_cx = x_off + (x_on - x_off) * progress;
         let thumb_cy = bounds.y + bounds.height / 2.0;
 
@@ -137,17 +155,34 @@ impl Switch {
             renderer.fill_circle(
                 Point::new(thumb_cx, thumb_cy),
                 thumb_r + 1.5,
-                Color { r: 0.0, g: 0.0, b: 0.0, a: 0.15 },
+                Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: 0.15,
+                },
             );
         }
         // Thumb
-        let thumb_color = if self.disabled { theme.fg_muted } else { Color::WHITE };
+        let thumb_color = if self.disabled {
+            theme.fg_muted
+        } else {
+            Color::WHITE
+        };
         renderer.fill_circle(Point::new(thumb_cx, thumb_cy), thumb_r, thumb_color);
 
         // Label
         if !self.label.is_empty() {
             let text_x = bounds.x + track_w + 10.0;
-            let label_color = if self.disabled { theme.fg_muted } else { if self.on { theme.fg } else { theme.fg_muted } };
+            let label_color = if self.disabled {
+                theme.fg_muted
+            } else {
+                if self.on {
+                    theme.fg
+                } else {
+                    theme.fg_muted
+                }
+            };
             let opts = TextOptions {
                 font_size: theme.font_size_md,
                 color: label_color,
@@ -155,40 +190,86 @@ impl Switch {
             };
             renderer.draw_text(
                 &self.label,
-                Point::new(text_x, bounds.y + (bounds.height - theme.font_size_md) / 2.0),
+                Point::new(
+                    text_x,
+                    bounds.y + (bounds.height - theme.font_size_md) / 2.0,
+                ),
                 &opts,
+            );
+        }
+
+        // Focus ring
+        if self.focused && !self.disabled {
+            renderer.stroke_rect(
+                Rect::new(bounds.x - 2.0, bounds.y - 2.0, track_w + 4.0, bounds.height + 4.0),
+                theme.accent.with_alpha(0.85),
+                2.0,
+                crate::style::Corners::all(track_h / 2.0 + 2.0),
             );
         }
     }
 }
 
 impl Widget for Switch {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn focusable(&self) -> bool {
+        !self.disabled
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         // Use animation if scheduler is available, otherwise instant
         let progress = if let Some(scheduler) = &self.scheduler {
             if let Ok(sched) = scheduler.lock() {
-                sched.get(&self.id, "progress").unwrap_or(if self.on { 1.0 } else { 0.0 })
+                sched
+                    .get(&self.id, "progress")
+                    .unwrap_or(if self.on { 1.0 } else { 0.0 })
             } else {
-                if self.on { 1.0_f32 } else { 0.0 }
+                if self.on {
+                    1.0_f32
+                } else {
+                    0.0
+                }
             }
         } else {
-            if self.on { 1.0_f32 } else { 0.0 }
+            if self.on {
+                1.0_f32
+            } else {
+                0.0
+            }
         };
 
         let track_w = self.size.track_width();
         let track_h = self.size.track_height();
         let thumb_r = self.size.thumb_radius();
 
-        let off_color = if self.disabled { theme.border } else { theme.bg_elevated };
-        let on_color = if self.disabled { theme.border } else { theme.accent };
+        let off_color = if self.disabled {
+            theme.border
+        } else {
+            theme.bg_elevated
+        };
+        let on_color = if self.disabled {
+            theme.border
+        } else {
+            theme.accent
+        };
         let track_color = off_color.lerp(on_color, progress);
-        let track_rect = Rect::new(bounds.x, bounds.y + (bounds.height - track_h) / 2.0, track_w, track_h);
-        renderer.fill_rect(track_rect, track_color, crate::style::Corners::all(track_h / 2.0));
+        let track_rect = Rect::new(
+            bounds.x,
+            bounds.y + (bounds.height - track_h) / 2.0,
+            track_w,
+            track_h,
+        );
+        renderer.fill_rect(
+            track_rect,
+            track_color,
+            crate::style::Corners::all(track_h / 2.0),
+        );
 
         let x_off = bounds.x + track_h / 2.0;
-        let x_on  = bounds.x + track_w - track_h / 2.0;
+        let x_on = bounds.x + track_w - track_h / 2.0;
         let thumb_cx = x_off + (x_on - x_off) * progress;
         let thumb_cy = bounds.y + bounds.height / 2.0;
 
@@ -197,7 +278,12 @@ impl Widget for Switch {
             renderer.fill_circle(
                 Point::new(thumb_cx, thumb_cy),
                 thumb_r + 1.5,
-                Color { r: 0.0, g: 0.0, b: 0.0, a: 0.15 },
+                Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: 0.15,
+                },
             );
         }
 
@@ -205,11 +291,26 @@ impl Widget for Switch {
         let thumb_color = if self.disabled {
             theme.fg_muted
         } else if self.pressed {
-            Color { r: 0.95, g: 0.95, b: 0.95, a: 1.0 }
+            Color {
+                r: 0.95,
+                g: 0.95,
+                b: 0.95,
+                a: 1.0,
+            }
         } else if self.hovered {
-            Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }
+            Color {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+            }
         } else {
-            Color { r: 0.95, g: 0.95, b: 0.95, a: 1.0 }
+            Color {
+                r: 0.95,
+                g: 0.95,
+                b: 0.95,
+                a: 1.0,
+            }
         };
         let thumb_r_draw = if self.pressed { thumb_r - 1.0 } else { thumb_r };
         renderer.fill_circle(Point::new(thumb_cx, thumb_cy), thumb_r_draw, thumb_color);
@@ -217,7 +318,15 @@ impl Widget for Switch {
         // Label
         if !self.label.is_empty() {
             let text_x = bounds.x + track_w + 10.0;
-            let label_color = if self.disabled { theme.fg_muted } else { if self.on { theme.fg } else { theme.fg_muted } };
+            let label_color = if self.disabled {
+                theme.fg_muted
+            } else {
+                if self.on {
+                    theme.fg
+                } else {
+                    theme.fg_muted
+                }
+            };
             let opts = TextOptions {
                 font_size: theme.font_size_md,
                 color: label_color,
@@ -225,7 +334,10 @@ impl Widget for Switch {
             };
             renderer.draw_text(
                 &self.label,
-                Point::new(text_x, bounds.y + (bounds.height - theme.font_size_md) / 2.0),
+                Point::new(
+                    text_x,
+                    bounds.y + (bounds.height - theme.font_size_md) / 2.0,
+                ),
                 &opts,
             );
         }
@@ -236,20 +348,56 @@ impl Widget for Switch {
             return EventStatus::Ignored;
         }
         match event {
-            Event::MouseMove { pos } => {
-                self.hovered = bounds.contains(pos.x, pos.y);
+            Event::FocusGained => {
+                self.focused = true;
                 EventStatus::Ignored
             }
-            Event::MouseDown { pos, button: MouseButton::Left } => {
-                if bounds.contains(pos.x, pos.y) {
-                    self.pressed = true;
+            Event::FocusLost => {
+                self.focused = false;
+                self.pressed = false;
+                EventStatus::Ignored
+            }
+            Event::KeyDown { key: Key::Enter, .. } | Event::KeyDown { key: Key::Char(' '), .. } => {
+                if self.focused {
                     self.on = !self.on;
-                    if let Some(f) = &self.on_change { f(self.on); }
-                    // Trigger animation
+                    if let Some(f) = &self.on_change {
+                        f(self.on);
+                    }
                     if let Some(scheduler) = &self.scheduler {
                         if let Ok(mut sched) = scheduler.lock() {
                             let target = if self.on { 1.0 } else { 0.0 };
                             sched.animate_to(&self.id, "progress", target, Easing::EaseOut, ANIM_DUR);
+                        }
+                    }
+                    return EventStatus::Consumed;
+                }
+                EventStatus::Ignored
+            }
+            Event::MouseMove { pos } => {
+                self.hovered = bounds.contains(pos.x, pos.y);
+                EventStatus::Ignored
+            }
+            Event::MouseDown {
+                pos,
+                button: MouseButton::Left,
+            } => {
+                if bounds.contains(pos.x, pos.y) {
+                    self.pressed = true;
+                    self.on = !self.on;
+                    if let Some(f) = &self.on_change {
+                        f(self.on);
+                    }
+                    // Trigger animation
+                    if let Some(scheduler) = &self.scheduler {
+                        if let Ok(mut sched) = scheduler.lock() {
+                            let target = if self.on { 1.0 } else { 0.0 };
+                            sched.animate_to(
+                                &self.id,
+                                "progress",
+                                target,
+                                Easing::EaseOut,
+                                ANIM_DUR,
+                            );
                         }
                     }
                     EventStatus::Consumed
@@ -257,7 +405,10 @@ impl Widget for Switch {
                     EventStatus::Ignored
                 }
             }
-            Event::MouseUp { pos, button: MouseButton::Left } => {
+            Event::MouseUp {
+                pos,
+                button: MouseButton::Left,
+            } => {
                 if bounds.contains(pos.x, pos.y) {
                     self.pressed = false;
                     EventStatus::Consumed

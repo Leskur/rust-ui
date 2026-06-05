@@ -26,19 +26,19 @@ pub enum DividerAxis {
 }
 
 pub struct Divider {
-    id:        String,
-    axis:      DividerAxis,
+    id: String,
+    axis: DividerAxis,
     thickness: f32,
-    margin:    f32,
+    margin: f32,
 }
 
 impl Divider {
     pub fn new() -> Self {
         Self {
-            id:        uuid(),
-            axis:      DividerAxis::Horizontal,
+            id: uuid(),
+            axis: DividerAxis::Horizontal,
             thickness: 1.0,
-            margin:    0.0,
+            margin: 0.0,
         }
     }
 
@@ -64,11 +64,15 @@ impl Divider {
 }
 
 impl Default for Divider {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Widget for Divider {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         let color = theme.border;
@@ -96,12 +100,14 @@ impl Widget for Divider {
     fn intrinsic_size(&self, _theme: &Theme) -> (f32, f32) {
         match self.axis {
             DividerAxis::Horizontal => (0.0, self.thickness + self.margin * 2.0),
-            DividerAxis::Vertical   => (self.thickness + self.margin * 2.0, 0.0),
+            DividerAxis::Vertical => (self.thickness + self.margin * 2.0, 0.0),
         }
     }
 }
 
-pub fn divider() -> Divider { Divider::new() }
+pub fn divider() -> Divider {
+    Divider::new()
+}
 
 fn uuid() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};

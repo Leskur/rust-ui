@@ -30,36 +30,68 @@ pub enum Key {
 /// Keyboard modifier state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Modifiers {
-    pub ctrl:  bool,
+    pub ctrl: bool,
     pub shift: bool,
-    pub alt:   bool,
-    pub meta:  bool,
+    pub alt: bool,
+    pub meta: bool,
 }
 
 /// All input events that the runtime delivers to the widget tree.
 #[derive(Debug, Clone)]
 pub enum Event {
     // ── Mouse ────────────────────────────────────────────────────────────────
-    MouseMove { pos: Point },
-    MouseDown { pos: Point, button: MouseButton },
-    MouseUp   { pos: Point, button: MouseButton },
-    MouseClick { pos: Point, button: MouseButton },
-    MouseDoubleClick { pos: Point, button: MouseButton },
-    Scroll    { pos: Point, delta_x: f32, delta_y: f32 },
+    MouseMove {
+        pos: Point,
+    },
+    MouseDown {
+        pos: Point,
+        button: MouseButton,
+    },
+    MouseUp {
+        pos: Point,
+        button: MouseButton,
+    },
+    MouseClick {
+        pos: Point,
+        button: MouseButton,
+    },
+    MouseDoubleClick {
+        pos: Point,
+        button: MouseButton,
+    },
+    Scroll {
+        pos: Point,
+        delta_x: f32,
+        delta_y: f32,
+    },
 
     // ── Keyboard ─────────────────────────────────────────────────────────────
-    KeyDown { key: Key, modifiers: Modifiers },
-    KeyUp   { key: Key, modifiers: Modifiers },
-    TextInput { text: String },
+    KeyDown {
+        key: Key,
+        modifiers: Modifiers,
+    },
+    KeyUp {
+        key: Key,
+        modifiers: Modifiers,
+    },
+    TextInput {
+        text: String,
+    },
     /// IME preedit text changed. Empty text means preedit was cancelled.
-    ImePreedit { text: String, cursor: Option<(usize, usize)> },
+    ImePreedit {
+        text: String,
+        cursor: Option<(usize, usize)>,
+    },
 
     // ── Focus ────────────────────────────────────────────────────────────────
     FocusGained,
     FocusLost,
 
     // ── Window ───────────────────────────────────────────────────────────────
-    Resized { width: f32, height: f32 },
+    Resized {
+        width: f32,
+        height: f32,
+    },
     CloseRequested,
 }
 

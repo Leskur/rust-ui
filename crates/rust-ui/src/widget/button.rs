@@ -9,7 +9,7 @@
 //! ```
 
 use crate::color::Color;
-use crate::event::{Event, EventStatus, MouseButton};
+use crate::event::{Event, EventStatus, Key, MouseButton};
 use crate::render::{Point, Rect, Renderer, TextOptions};
 use crate::style::{Corners, CursorStyle, Theme};
 use crate::widget::Widget;
@@ -51,38 +51,51 @@ enum State {
 }
 
 pub struct Button {
-    id:         String,
-    label:      String,
-    variant:    ButtonVariant,
-    size:       ButtonSize,
-    state:      State,
-    disabled:   bool,
-    loading:    bool,
+    id: String,
+    label: String,
+    variant: ButtonVariant,
+    size: ButtonSize,
+    state: State,
+    focused: bool,
+    disabled: bool,
+    loading: bool,
     full_width: bool,
-    on_click:   Option<Box<dyn Fn()>>,
+    on_click: Option<Box<dyn Fn()>>,
 }
 
 impl Button {
     pub fn new(label: impl Into<String>) -> Self {
         Self {
-            id:         uuid(),
-            label:      label.into(),
-            variant:    ButtonVariant::Primary,
-            size:       ButtonSize::Md,
-            state:      State::Normal,
-            disabled:   false,
-            loading:    false,
+            id: uuid(),
+            label: label.into(),
+            variant: ButtonVariant::Primary,
+            size: ButtonSize::Md,
+            state: State::Normal,
+            focused: false,
+            disabled: false,
+            loading: false,
             full_width: false,
-            on_click:   None,
+            on_click: None,
         }
     }
 
-    pub fn variant(mut self, v: ButtonVariant) -> Self { self.variant = v; self }
-    pub fn size(mut self, s: ButtonSize) -> Self { self.size = s; self }
-    pub fn full_width(mut self) -> Self { self.full_width = true; self }
+    pub fn variant(mut self, v: ButtonVariant) -> Self {
+        self.variant = v;
+        self
+    }
+    pub fn size(mut self, s: ButtonSize) -> Self {
+        self.size = s;
+        self
+    }
+    pub fn full_width(mut self) -> Self {
+        self.full_width = true;
+        self
+    }
     pub fn loading(mut self, l: bool) -> Self {
         self.loading = l;
-        if l { self.state = State::Disabled; }
+        if l {
+            self.state = State::Disabled;
+        }
         self
     }
     pub fn disabled(mut self, d: bool) -> Self {
@@ -98,9 +111,9 @@ impl Button {
     /// (h_padding, v_padding, font_size) for each size
     fn size_metrics(&self, theme: &Theme) -> (f32, f32, f32) {
         match self.size {
-            ButtonSize::Xs => (8.0,  3.0,  theme.font_size_sm),
-            ButtonSize::Sm => (12.0, 5.0,  theme.font_size_sm),
-            ButtonSize::Md => (16.0, 8.0,  theme.font_size_md),
+            ButtonSize::Xs => (8.0, 3.0, theme.font_size_sm),
+            ButtonSize::Sm => (12.0, 5.0, theme.font_size_sm),
+            ButtonSize::Md => (16.0, 8.0, theme.font_size_md),
             ButtonSize::Lg => (22.0, 11.0, theme.font_size_lg),
         }
     }
@@ -111,23 +124,29 @@ impl Button {
 
     fn colors(&self, theme: &Theme) -> (Color, Color) {
         let (bg, fg) = match self.variant {
-            ButtonVariant::Primary   => (theme.accent,         theme.accent_fg),
-            ButtonVariant::Secondary => (theme.bg_elevated,    theme.fg),
-            ButtonVariant::Outline   => (Color::TRANSPARENT,   theme.fg),
-            ButtonVariant::Danger    => (theme.danger,         theme.danger_fg),
-            ButtonVariant::Ghost     => (Color::TRANSPARENT,   theme.fg),
+            ButtonVariant::Primary => (theme.accent, theme.accent_fg),
+            ButtonVariant::Secondary => (theme.bg_elevated, theme.fg),
+            ButtonVariant::Outline => (Color::TRANSPARENT, theme.fg),
+            ButtonVariant::Danger => (theme.danger, theme.danger_fg),
+            ButtonVariant::Ghost => (Color::TRANSPARENT, theme.fg),
         };
         match self.state {
-            State::Hovered  => (bg.lerp(Color::WHITE, 0.08), fg),
-            State::Pressed  => (bg.lerp(Color::BLACK, 0.12), fg),
-            State::Disabled => (bg.with_alpha(0.4),          fg.with_alpha(0.4)),
-            State::Normal   => (bg, fg),
+            State::Hovered => (bg.lerp(Color::WHITE, 0.08), fg),
+            State::Pressed => (bg.lerp(Color::BLACK, 0.12), fg),
+            State::Disabled => (bg.with_alpha(0.4), fg.with_alpha(0.4)),
+            State::Normal => (bg, fg),
         }
     }
 }
 
 impl Widget for Button {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn focusable(&self) -> bool {
+        self.state != State::Disabled
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         let (bg, fg) = self.colors(theme);
@@ -152,6 +171,16 @@ impl Widget for Button {
             renderer.stroke_rect(bounds, border_color, 1.0, radius);
         }
 
+        // Focus ring
+        if self.focused && self.is_interactive() {
+            renderer.stroke_rect(
+                Rect::new(bounds.x - 2.0, bounds.y - 2.0, bounds.width + 4.0, bounds.height + 4.0),
+                theme.accent.with_alpha(0.85),
+                2.0,
+                Corners::all(theme.radius_md + 2.0),
+            );
+        }
+
         // Label — show "…" when loading
         let display_label = if self.loading { "…" } else { &self.label };
 
@@ -168,18 +197,52 @@ impl Widget for Button {
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
-        if !self.is_interactive() { return EventStatus::Ignored; }
         match event {
-            Event::MouseMove { pos } => {
-                let hovered = bounds.contains(pos.x, pos.y);
-                self.state = if hovered {
-                    if self.state == State::Pressed { State::Pressed } else { State::Hovered }
+            Event::FocusGained => {
+                self.focused = true;
+                EventStatus::Ignored
+            }
+            Event::FocusLost => {
+                self.focused = false;
+                self.state = if self.disabled || self.loading {
+                    State::Disabled
                 } else {
                     State::Normal
                 };
                 EventStatus::Ignored
             }
-            Event::MouseDown { pos, button: MouseButton::Left } => {
+            Event::KeyDown { key: Key::Enter, .. } | Event::KeyDown { key: Key::Char(' '), .. } => {
+                if self.focused && self.is_interactive() {
+                    if let Some(f) = &self.on_click {
+                        f();
+                    }
+                    return EventStatus::Consumed;
+                }
+                EventStatus::Ignored
+            }
+            Event::MouseMove { pos } => {
+                if !self.is_interactive() {
+                    return EventStatus::Ignored;
+                }
+                let hovered = bounds.contains(pos.x, pos.y);
+                self.state = if hovered {
+                    if self.state == State::Pressed {
+                        State::Pressed
+                    } else {
+                        State::Hovered
+                    }
+                } else {
+                    State::Normal
+                };
+                EventStatus::Ignored
+            }
+            Event::MouseDown {
+                pos,
+                button: MouseButton::Left,
+            } => {
+                if !self.is_interactive() {
+                    return EventStatus::Ignored;
+                }
                 if bounds.contains(pos.x, pos.y) {
                     self.state = State::Pressed;
                     EventStatus::Consumed
@@ -187,10 +250,18 @@ impl Widget for Button {
                     EventStatus::Ignored
                 }
             }
-            Event::MouseUp { pos, button: MouseButton::Left } => {
+            Event::MouseUp {
+                pos,
+                button: MouseButton::Left,
+            } => {
+                if !self.is_interactive() {
+                    return EventStatus::Ignored;
+                }
                 if self.state == State::Pressed && bounds.contains(pos.x, pos.y) {
                     self.state = State::Hovered;
-                    if let Some(f) = &self.on_click { f(); }
+                    if let Some(f) = &self.on_click {
+                        f();
+                    }
                     EventStatus::Consumed
                 } else {
                     self.state = State::Normal;
@@ -211,8 +282,14 @@ impl Widget for Button {
     }
 
     fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
-        if !bounds.contains(pos.0, pos.1) { return CursorStyle::Default; }
-        if self.disabled || self.loading { CursorStyle::NotAllowed } else { CursorStyle::Pointer }
+        if !bounds.contains(pos.0, pos.1) {
+            return CursorStyle::Default;
+        }
+        if self.disabled || self.loading {
+            CursorStyle::NotAllowed
+        } else {
+            CursorStyle::Pointer
+        }
     }
 }
 

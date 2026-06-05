@@ -32,8 +32,8 @@ pub enum Alignment {
 }
 
 pub struct Stack {
-    id:        String,
-    children:  Vec<Box<dyn Widget>>,
+    id: String,
+    children: Vec<Box<dyn Widget>>,
     alignment: Alignment,
 }
 
@@ -53,6 +53,10 @@ impl Stack {
 
     fn child_rect(&self, child: &dyn Widget, bounds: Rect, theme: &Theme) -> Rect {
         let (cw, ch) = child.intrinsic_size(theme);
+        // (0, 0) intrinsic size means "fill the stack" — used by Dialog overlays.
+        if cw == 0.0 && ch == 0.0 {
+            return bounds;
+        }
         let x = match self.alignment {
             Alignment::TopLeft | Alignment::CenterLeft | Alignment::BottomLeft => bounds.x,
             Alignment::TopCenter | Alignment::Center | Alignment::BottomCenter => {
@@ -76,27 +80,53 @@ impl Stack {
 }
 
 impl Widget for Stack {
-    fn id(&self) -> &str { &self.id }
-    fn is_container(&self) -> bool { true }
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn is_container(&self) -> bool {
+        true
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         for child in &self.children {
             let cb = self.child_rect(child.as_ref(), bounds, theme);
             child.draw(renderer, cb, theme);
         }
+        for child in &self.children {
+            let cb = self.child_rect(child.as_ref(), bounds, theme);
+            child.draw_overlay(renderer, cb, theme);
+        }
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
         let theme = Theme::default();
         // Pre-compute child rects before mutably iterating
-        let rects: Vec<Rect> = self.children.iter()
+        let rects: Vec<Rect> = self
+            .children
+            .iter()
             .map(|c| self.child_rect(c.as_ref(), bounds, &theme))
             .collect();
-        // Dispatch in reverse order (top-most child gets event first)
+        // Dispatch in reverse order (top-most child gets event first).
+        // For pointer-position events, hit-test so only widgets under the pointer
+        // receive the event; keyboard/text events go top-most first.
+        let hit_pos = match event {
+            Event::MouseMove { pos }
+            | Event::MouseDown { pos, .. }
+            | Event::MouseUp { pos, .. }
+            | Event::MouseClick { pos, .. }
+            | Event::MouseDoubleClick { pos, .. }
+            | Event::Scroll { pos, .. } => Some(*pos),
+            _ => None,
+        };
+
         let mut result = EventStatus::Ignored;
         for (child, cb) in self.children.iter_mut().zip(rects.iter()).rev() {
-            let s = child.handle_event(event, *cb);
-            if s == EventStatus::Consumed {
+            if let Some(p) = hit_pos {
+                if !child.hit_test((p.x, p.y), *cb, &theme) {
+                    continue;
+                }
+            }
+            if child.handle_event(event, *cb) == EventStatus::Consumed {
                 result = EventStatus::Consumed;
                 break;
             }
@@ -106,8 +136,36 @@ impl Widget for Stack {
 
     fn layout_children<'a>(&'a self, bounds: Rect, theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
         // top-most (last) child first for cursor hit-testing
-        self.children.iter().rev()
-            .map(|c| (c.as_ref() as &dyn Widget, self.child_rect(c.as_ref(), bounds, theme)))
+        self.children
+            .iter()
+            .rev()
+            .map(|c| {
+                (
+                    c.as_ref() as &dyn Widget,
+                    self.child_rect(c.as_ref(), bounds, theme),
+                )
+            })
+            .collect()
+    }
+
+    fn layout_children_mut<'a>(
+        &'a mut self,
+        bounds: Rect,
+        theme: &Theme,
+    ) -> Vec<(&'a mut dyn Widget, Rect)> {
+        // Pre-compute child rects before mutably iterating (avoids borrow conflicts).
+        let rects: Vec<Rect> = self
+            .children
+            .iter()
+            .map(|c| self.child_rect(c.as_ref(), bounds, theme))
+            .collect();
+
+        // top-most (last) child first
+        self.children
+            .iter_mut()
+            .zip(rects.into_iter())
+            .rev()
+            .map(|(c, r)| (c.as_mut() as &mut dyn Widget, r))
             .collect()
     }
 

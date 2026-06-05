@@ -45,29 +45,29 @@ impl InputSize {
 // ── Input struct ──────────────────────────────────────────────────────────────
 
 pub struct Input {
-    id:          String,
-    value:       String,
+    id: String,
+    value: String,
     placeholder: String,
-    preedit:     String,
+    preedit: String,
 
     // Cursor & selection (byte indices into `value`)
     cursor_byte: usize,
-    sel_anchor:  Option<usize>,
+    sel_anchor: Option<usize>,
 
     // Horizontal scroll (pixel offset, updated lazily during draw)
-    scroll_x:    Cell<f32>,
+    scroll_x: Cell<f32>,
 
-    focused:   bool,
-    hovered:   bool,
-    disabled:  bool,
+    focused: bool,
+    hovered: bool,
+    disabled: bool,
     clearable: bool,
-    password:  bool,
-    size:      InputSize,
-    width:     Option<f32>,
+    password: bool,
+    size: InputSize,
+    width: Option<f32>,
 
     on_change: Option<Box<dyn Fn(&str)>>,
     on_submit: Option<Box<dyn Fn(&str)>>,
-    on_clear:  Option<Box<dyn Fn()>>,
+    on_clear: Option<Box<dyn Fn()>>,
 }
 
 // ── Constructor / builders ────────────────────────────────────────────────────
@@ -77,43 +77,72 @@ impl Input {
         let v: String = value.into();
         let end = v.len();
         Self {
-            id:          uuid(),
-            value:       v,
+            id: uuid(),
+            value: v,
             placeholder: String::new(),
-            preedit:     String::new(),
+            preedit: String::new(),
             cursor_byte: end,
-            sel_anchor:  None,
-            scroll_x:    Cell::new(0.0),
-            focused:   false,
-            hovered:   false,
-            disabled:  false,
+            sel_anchor: None,
+            scroll_x: Cell::new(0.0),
+            focused: false,
+            hovered: false,
+            disabled: false,
             clearable: false,
-            password:  false,
-            size:      InputSize::Md,
-            width:     None,
+            password: false,
+            size: InputSize::Md,
+            width: None,
             on_change: None,
             on_submit: None,
-            on_clear:  None,
+            on_clear: None,
         }
     }
 
-    pub fn placeholder(mut self, p: impl Into<String>) -> Self { self.placeholder = p.into(); self }
-    pub fn disabled(mut self, d: bool) -> Self { self.disabled = d; self }
+    pub fn placeholder(mut self, p: impl Into<String>) -> Self {
+        self.placeholder = p.into();
+        self
+    }
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
+        self
+    }
     /// Fixed pixel width. Without this, the input fills its parent container.
-    pub fn width(mut self, w: f32) -> Self { self.width = Some(w); self }
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = Some(w);
+        self
+    }
     /// Height preset: Sm / Md (default) / Lg.
-    pub fn size(mut self, s: InputSize) -> Self { self.size = s; self }
-    pub fn clearable(mut self) -> Self { self.clearable = true; self }
-    pub fn password(mut self) -> Self { self.password = true; self }
-    pub fn on_change(mut self, f: impl Fn(&str) + 'static) -> Self { self.on_change = Some(Box::new(f)); self }
-    pub fn on_submit(mut self, f: impl Fn(&str) + 'static) -> Self { self.on_submit = Some(Box::new(f)); self }
-    pub fn on_clear(mut self,  f: impl Fn()   + 'static) -> Self { self.on_clear  = Some(Box::new(f)); self }
+    pub fn size(mut self, s: InputSize) -> Self {
+        self.size = s;
+        self
+    }
+    pub fn clearable(mut self) -> Self {
+        self.clearable = true;
+        self
+    }
+    pub fn password(mut self) -> Self {
+        self.password = true;
+        self
+    }
+    pub fn on_change(mut self, f: impl Fn(&str) + 'static) -> Self {
+        self.on_change = Some(Box::new(f));
+        self
+    }
+    pub fn on_submit(mut self, f: impl Fn(&str) + 'static) -> Self {
+        self.on_submit = Some(Box::new(f));
+        self
+    }
+    pub fn on_clear(mut self, f: impl Fn() + 'static) -> Self {
+        self.on_clear = Some(Box::new(f));
+        self
+    }
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 impl Input {
-    fn is_interactive(&self) -> bool { !self.disabled }
+    fn is_interactive(&self) -> bool {
+        !self.disabled
+    }
 
     fn draw_width(&self, bounds_w: f32) -> f32 {
         self.width.map(|w| w.min(bounds_w)).unwrap_or(bounds_w)
@@ -121,14 +150,21 @@ impl Input {
 
     fn clear_btn_rect(&self, db: Rect) -> Rect {
         let sz = 16.0;
-        Rect::new(db.x + db.width - sz - 8.0, db.y + (db.height - sz) / 2.0, sz, sz)
+        Rect::new(
+            db.x + db.width - sz - 8.0,
+            db.y + (db.height - sz) / 2.0,
+            sz,
+            sz,
+        )
     }
 
     // ── Cursor movement ───────────────────────────────────────────────────────
 
     /// Byte index of the char immediately before the cursor.
     fn byte_left(&self) -> usize {
-        if self.cursor_byte == 0 { return 0; }
+        if self.cursor_byte == 0 {
+            return 0;
+        }
         self.value[..self.cursor_byte]
             .char_indices()
             .next_back()
@@ -149,13 +185,18 @@ impl Input {
 
     fn selection_range(&self) -> Option<(usize, usize)> {
         self.sel_anchor.map(|a| {
-            if a <= self.cursor_byte { (a, self.cursor_byte) }
-            else                     { (self.cursor_byte, a) }
+            if a <= self.cursor_byte {
+                (a, self.cursor_byte)
+            } else {
+                (self.cursor_byte, a)
+            }
         })
     }
 
     fn has_selection(&self) -> bool {
-        self.sel_anchor.map(|a| a != self.cursor_byte).unwrap_or(false)
+        self.sel_anchor
+            .map(|a| a != self.cursor_byte)
+            .unwrap_or(false)
     }
 
     /// Delete the selected region. Returns true if something was deleted.
@@ -164,7 +205,7 @@ impl Input {
             if s < e {
                 self.value.drain(s..e);
                 self.cursor_byte = s;
-                self.sel_anchor  = None;
+                self.sel_anchor = None;
                 return true;
             }
         }
@@ -187,7 +228,10 @@ impl Input {
             let nchars = self.value[..byte].chars().count();
             nchars as f32 * font_size * 0.85
         } else {
-            self.value[..byte].chars().map(|c| char_px(c, font_size)).sum()
+            self.value[..byte]
+                .chars()
+                .map(|c| char_px(c, font_size))
+                .sum()
         }
     }
 
@@ -195,8 +239,14 @@ impl Input {
     fn byte_at_pixel(&self, x: f32, font_size: f32) -> usize {
         let mut acc = 0.0_f32;
         for (byte_pos, c) in self.value.char_indices() {
-            let cw = if self.password { font_size * 0.85 } else { char_px(c, font_size) };
-            if acc + cw / 2.0 >= x { return byte_pos; }
+            let cw = if self.password {
+                font_size * 0.85
+            } else {
+                char_px(c, font_size)
+            };
+            if acc + cw / 2.0 >= x {
+                return byte_pos;
+            }
             acc += cw;
         }
         self.value.len()
@@ -205,39 +255,54 @@ impl Input {
 
 /// Approximate display width of a single character.
 fn char_px(c: char, font_size: f32) -> f32 {
-    if c.is_ascii() { font_size * 0.6 } else { font_size }
+    if c.is_ascii() {
+        font_size * 0.6
+    } else {
+        font_size
+    }
 }
 
 // ── Widget impl ───────────────────────────────────────────────────────────────
 
 impl Widget for Input {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn focusable(&self) -> bool {
+        !self.disabled
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
-        let draw_w  = self.draw_width(bounds.width);
+        let draw_w = self.draw_width(bounds.width);
         let input_h = self.size.height(theme.font_size_md);
         let db = Rect::new(bounds.x, bounds.y, draw_w, input_h);
 
         // ── Border / background ───────────────────────────────────────────────
-        let border_color = if self.disabled        { theme.border.with_alpha(0.5) }
-                           else if self.focused     { theme.accent }
-                           else if self.hovered     { theme.fg_subtle }
-                           else                     { theme.border };
+        let border_color = if self.disabled {
+            theme.border.with_alpha(0.5)
+        } else if self.focused {
+            theme.accent
+        } else if self.hovered {
+            theme.fg_subtle
+        } else {
+            theme.border
+        };
         let radius = Corners::all(theme.radius_md);
         renderer.fill_rect(db, theme.bg_elevated, radius);
         renderer.stroke_rect(db, border_color, 1.5, radius);
 
-        let show_clear  = self.clearable && !self.value.is_empty() && !self.disabled;
-        let right_pad   = if show_clear { 32.0 } else { 10.0 };
-        let left_pad    = 10.0;
+        let show_clear = self.clearable && !self.value.is_empty() && !self.disabled;
+        let right_pad = if show_clear { 32.0 } else { 10.0 };
+        let left_pad = 10.0;
         let text_area_w = (db.width - left_pad - right_pad).max(0.0);
-        let px          = db.x + left_pad;
-        let py          = db.y + (input_h - theme.font_size_md) / 2.0;
-        let fs          = theme.font_size_md;
+        let px = db.x + left_pad;
+        let py = db.y + (input_h - theme.font_size_md) / 2.0;
+        let fs = theme.font_size_md;
 
         // ── Update scroll so cursor stays visible ─────────────────────────────
         let cursor_px = self.pixel_x_at(self.cursor_byte, fs);
-        let mut sx    = self.scroll_x.get();
+        let mut sx = self.scroll_x.get();
         if cursor_px < sx + 2.0 {
             sx = (cursor_px - 2.0).max(0.0);
         } else if cursor_px > sx + text_area_w - 4.0 {
@@ -246,8 +311,12 @@ impl Widget for Input {
         self.scroll_x.set(sx);
 
         // ── Clip to text area (prevents overflow rendering) ───────────────────
-        let clip = Rect::new(db.x + left_pad - 1.0, db.y + 2.0,
-                             text_area_w + 1.0, input_h - 4.0);
+        let clip = Rect::new(
+            db.x + left_pad - 1.0,
+            db.y + 2.0,
+            text_area_w + 1.0,
+            input_h - 4.0,
+        );
         renderer.push_clip(clip);
 
         let opts = TextOptions {
@@ -260,10 +329,19 @@ impl Widget for Input {
 
         if self.value.is_empty() && self.preedit.is_empty() {
             // ── Placeholder ───────────────────────────────────────────────────
-            let ph_color = if self.disabled { theme.fg_subtle.with_alpha(0.5) }
-                           else             { theme.fg_subtle };
-            renderer.draw_text(&self.placeholder, Point::new(text_origin_x, py),
-                               &TextOptions { color: ph_color, ..opts.clone() });
+            let ph_color = if self.disabled {
+                theme.fg_subtle.with_alpha(0.5)
+            } else {
+                theme.fg_subtle
+            };
+            renderer.draw_text(
+                &self.placeholder,
+                Point::new(text_origin_x, py),
+                &TextOptions {
+                    color: ph_color,
+                    ..opts.clone()
+                },
+            );
         } else {
             // ── Selection highlight ───────────────────────────────────────────
             if self.focused {
@@ -283,7 +361,11 @@ impl Widget for Input {
             }
 
             // ── Value text ────────────────────────────────────────────────────
-            let val_color = if self.disabled { theme.fg.with_alpha(0.5) } else { theme.fg };
+            let val_color = if self.disabled {
+                theme.fg.with_alpha(0.5)
+            } else {
+                theme.fg
+            };
             let val_str: String;
             let display_val = if self.password {
                 val_str = "\u{25cf}".repeat(self.value.chars().count());
@@ -291,33 +373,43 @@ impl Widget for Input {
             } else {
                 self.value.as_str()
             };
-            let (vw, _) = renderer.draw_text(display_val, Point::new(text_origin_x, py),
-                                             &TextOptions { color: val_color, ..opts.clone() });
+            let (vw, _) = renderer.draw_text(
+                display_val,
+                Point::new(text_origin_x, py),
+                &TextOptions {
+                    color: val_color,
+                    ..opts.clone()
+                },
+            );
 
             // ── IME preedit ───────────────────────────────────────────────────
             if !self.preedit.is_empty() {
                 let pre_x = text_origin_x + vw;
                 let (pw, _) = renderer.draw_text(
-                    &self.preedit, Point::new(pre_x, py),
-                    &TextOptions { color: theme.fg_subtle, ..opts },
+                    &self.preedit,
+                    Point::new(pre_x, py),
+                    &TextOptions {
+                        color: theme.fg_subtle,
+                        ..opts
+                    },
                 );
                 renderer.draw_line(
-                    Point::new(pre_x,      py + fs + 1.0),
+                    Point::new(pre_x, py + fs + 1.0),
                     Point::new(pre_x + pw, py + fs + 1.0),
-                    theme.fg_subtle, 1.0,
+                    theme.fg_subtle,
+                    1.0,
                 );
             }
         }
 
         // ── Text cursor (only when no selection) ──────────────────────────────
         if self.focused && !self.has_selection() && self.preedit.is_empty() {
-            let cx = (px + cursor_px - sx)
-                .max(px)
-                .min(px + text_area_w);
+            let cx = (px + cursor_px - sx).max(px).min(px + text_area_w);
             renderer.draw_line(
                 Point::new(cx, py + 1.0),
                 Point::new(cx, py + fs - 1.0),
-                theme.fg, 1.5,
+                theme.fg,
+                1.5,
             );
         }
 
@@ -325,20 +417,34 @@ impl Widget for Input {
 
         // ── Clear button × ────────────────────────────────────────────────────
         if show_clear {
-            let cr        = self.clear_btn_rect(db);
-            let icon_col  = if self.hovered { theme.fg } else { theme.fg_subtle };
-            let (cx, cy)  = (cr.x + cr.width / 2.0, cr.y + cr.height / 2.0);
-            let arm       = 4.0;
-            renderer.draw_line(Point::new(cx-arm, cy-arm), Point::new(cx+arm, cy+arm), icon_col, 1.5);
-            renderer.draw_line(Point::new(cx+arm, cy-arm), Point::new(cx-arm, cy+arm), icon_col, 1.5);
+            let cr = self.clear_btn_rect(db);
+            let icon_col = if self.hovered {
+                theme.fg
+            } else {
+                theme.fg_subtle
+            };
+            let (cx, cy) = (cr.x + cr.width / 2.0, cr.y + cr.height / 2.0);
+            let arm = 4.0;
+            renderer.draw_line(
+                Point::new(cx - arm, cy - arm),
+                Point::new(cx + arm, cy + arm),
+                icon_col,
+                1.5,
+            );
+            renderer.draw_line(
+                Point::new(cx + arm, cy - arm),
+                Point::new(cx - arm, cy + arm),
+                icon_col,
+                1.5,
+            );
         }
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
-        let draw_w  = self.draw_width(bounds.width);
+        let draw_w = self.draw_width(bounds.width);
         let input_h = self.size.height(Theme::default().font_size_md);
-        let db      = Rect::new(bounds.x, bounds.y, draw_w, input_h);
-        let fs      = Theme::default().font_size_md;
+        let db = Rect::new(bounds.x, bounds.y, draw_w, input_h);
+        let fs = Theme::default().font_size_md;
 
         match event {
             // ── Mouse ─────────────────────────────────────────────────────────
@@ -347,7 +453,10 @@ impl Widget for Input {
                 EventStatus::Ignored
             }
 
-            Event::MouseDown { pos, button: MouseButton::Left } => {
+            Event::MouseDown {
+                pos,
+                button: MouseButton::Left,
+            } => {
                 if db.contains(pos.x, pos.y) && self.is_interactive() {
                     // Clear button hit test
                     if self.clearable && !self.value.is_empty() {
@@ -355,22 +464,26 @@ impl Widget for Input {
                             self.value.clear();
                             self.preedit.clear();
                             self.cursor_byte = 0;
-                            self.sel_anchor  = None;
+                            self.sel_anchor = None;
                             self.scroll_x.set(0.0);
-                            if let Some(f) = &self.on_change { f(&self.value); }
-                            if let Some(f) = &self.on_clear  { f(); }
+                            if let Some(f) = &self.on_change {
+                                f(&self.value);
+                            }
+                            if let Some(f) = &self.on_clear {
+                                f();
+                            }
                             return EventStatus::Consumed;
                         }
                     }
                     // Click to position cursor
                     let left_pad = 10.0;
-                    let click_x  = pos.x - db.x - left_pad + self.scroll_x.get();
+                    let click_x = pos.x - db.x - left_pad + self.scroll_x.get();
                     self.cursor_byte = self.byte_at_pixel(click_x.max(0.0), fs);
-                    self.sel_anchor  = None;
-                    self.focused     = true;
+                    self.sel_anchor = None;
+                    self.focused = true;
                     EventStatus::Consumed
                 } else {
-                    self.focused    = false;
+                    self.focused = false;
                     self.sel_anchor = None;
                     EventStatus::Ignored
                 }
@@ -383,7 +496,9 @@ impl Widget for Input {
                 let at = self.cursor_byte;
                 self.value.insert_str(at, text);
                 self.cursor_byte += text.len();
-                if let Some(f) = &self.on_change { f(&self.value); }
+                if let Some(f) = &self.on_change {
+                    f(&self.value);
+                }
                 EventStatus::Consumed
             }
 
@@ -395,7 +510,7 @@ impl Widget for Input {
 
             // ── Keyboard ─────────────────────────────────────────────────────
             Event::KeyDown { key, modifiers } if self.focused => {
-                let ctrl  = modifiers.ctrl || modifiers.meta;
+                let ctrl = modifiers.ctrl || modifiers.meta;
                 let shift = modifiers.shift;
 
                 match key {
@@ -407,7 +522,7 @@ impl Widget for Input {
                         } else if self.has_selection() {
                             let (s, _) = self.selection_range().unwrap();
                             self.cursor_byte = s;
-                            self.sel_anchor  = None;
+                            self.sel_anchor = None;
                         } else {
                             self.cursor_byte = self.byte_left();
                         }
@@ -421,7 +536,7 @@ impl Widget for Input {
                         } else if self.has_selection() {
                             let (_, e) = self.selection_range().unwrap();
                             self.cursor_byte = e;
-                            self.sel_anchor  = None;
+                            self.sel_anchor = None;
                         } else {
                             self.cursor_byte = self.byte_right();
                         }
@@ -429,13 +544,21 @@ impl Widget for Input {
 
                     // ── Home ──────────────────────────────────────────────────
                     Key::Home => {
-                        if shift { self.start_or_extend_sel(); } else { self.sel_anchor = None; }
+                        if shift {
+                            self.start_or_extend_sel();
+                        } else {
+                            self.sel_anchor = None;
+                        }
                         self.cursor_byte = 0;
                     }
 
                     // ── End ───────────────────────────────────────────────────
                     Key::End => {
-                        if shift { self.start_or_extend_sel(); } else { self.sel_anchor = None; }
+                        if shift {
+                            self.start_or_extend_sel();
+                        } else {
+                            self.sel_anchor = None;
+                        }
                         self.cursor_byte = self.value.len();
                     }
 
@@ -443,34 +566,48 @@ impl Widget for Input {
                     Key::Backspace => {
                         if !self.preedit.is_empty() {
                             // Remove last char from preedit
-                            let new_len = self.preedit
-                                .char_indices().next_back().map(|(i,_)| i).unwrap_or(0);
+                            let new_len = self
+                                .preedit
+                                .char_indices()
+                                .next_back()
+                                .map(|(i, _)| i)
+                                .unwrap_or(0);
                             self.preedit.truncate(new_len);
                         } else if self.delete_selection() {
-                            if let Some(f) = &self.on_change { f(&self.value); }
+                            if let Some(f) = &self.on_change {
+                                f(&self.value);
+                            }
                         } else if self.cursor_byte > 0 {
                             let new_pos = self.byte_left();
                             self.value.drain(new_pos..self.cursor_byte);
                             self.cursor_byte = new_pos;
-                            if let Some(f) = &self.on_change { f(&self.value); }
+                            if let Some(f) = &self.on_change {
+                                f(&self.value);
+                            }
                         }
                     }
 
                     // ── Delete ────────────────────────────────────────────────
                     Key::Delete => {
                         if self.delete_selection() {
-                            if let Some(f) = &self.on_change { f(&self.value); }
+                            if let Some(f) = &self.on_change {
+                                f(&self.value);
+                            }
                         } else if self.cursor_byte < self.value.len() {
                             let next = self.byte_right();
                             self.value.drain(self.cursor_byte..next);
-                            if let Some(f) = &self.on_change { f(&self.value); }
+                            if let Some(f) = &self.on_change {
+                                f(&self.value);
+                            }
                         }
                     }
 
                     // ── Enter ─────────────────────────────────────────────────
                     Key::Enter => {
                         self.preedit.clear();
-                        if let Some(f) = &self.on_submit { f(&self.value); }
+                        if let Some(f) = &self.on_submit {
+                            f(&self.value);
+                        }
                     }
 
                     // ── Escape ────────────────────────────────────────────────
@@ -478,19 +615,21 @@ impl Widget for Input {
                         if !self.preedit.is_empty() {
                             self.preedit.clear();
                         } else {
-                            self.focused    = false;
+                            self.focused = false;
                             self.sel_anchor = None;
                         }
                     }
 
                     // ── Ctrl shortcuts ────────────────────────────────────────
                     Key::Char('a') if ctrl => {
-                        self.sel_anchor  = Some(0);
+                        self.sel_anchor = Some(0);
                         self.cursor_byte = self.value.len();
                     }
                     Key::Char('c') if ctrl => {
                         if let Some((s, e)) = self.selection_range() {
-                            if s < e { clipboard_copy(&self.value[s..e]); }
+                            if s < e {
+                                clipboard_copy(&self.value[s..e]);
+                            }
                         }
                     }
                     Key::Char('x') if ctrl => {
@@ -498,7 +637,9 @@ impl Widget for Input {
                             if s < e {
                                 clipboard_copy(&self.value[s..e]);
                                 self.delete_selection();
-                                if let Some(f) = &self.on_change { f(&self.value); }
+                                if let Some(f) = &self.on_change {
+                                    f(&self.value);
+                                }
                             }
                         }
                     }
@@ -508,7 +649,9 @@ impl Widget for Input {
                             let at = self.cursor_byte;
                             self.value.insert_str(at, &text);
                             self.cursor_byte += text.len();
-                            if let Some(f) = &self.on_change { f(&self.value); }
+                            if let Some(f) = &self.on_change {
+                                f(&self.value);
+                            }
                         }
                     }
 
@@ -518,9 +661,16 @@ impl Widget for Input {
             }
 
             Event::FocusLost => {
-                self.focused    = false;
+                self.focused = false;
                 self.sel_anchor = None;
                 self.preedit.clear();
+                EventStatus::Ignored
+            }
+
+            Event::FocusGained => {
+                if !self.disabled {
+                    self.focused = true;
+                }
                 EventStatus::Ignored
             }
 
@@ -529,21 +679,32 @@ impl Widget for Input {
     }
 
     fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
-        (self.width.unwrap_or(240.0), self.size.height(theme.font_size_md))
+        (
+            self.width.unwrap_or(240.0),
+            self.size.height(theme.font_size_md),
+        )
     }
 
     fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
-        let draw_w  = self.draw_width(bounds.width);
+        let draw_w = self.draw_width(bounds.width);
         let input_h = self.size.height(Theme::default().font_size_md);
         let db = Rect::new(bounds.x, bounds.y, draw_w, input_h);
-        if !db.contains(pos.0, pos.1) { return CursorStyle::Default; }
-        if self.disabled { CursorStyle::NotAllowed } else { CursorStyle::Text }
+        if !db.contains(pos.0, pos.1) {
+            return CursorStyle::Default;
+        }
+        if self.disabled {
+            CursorStyle::NotAllowed
+        } else {
+            CursorStyle::Text
+        }
     }
 }
 
 // ── Public constructors ───────────────────────────────────────────────────────
 
-pub fn input(value: impl Into<String>) -> Input { Input::new(value) }
+pub fn input(value: impl Into<String>) -> Input {
+    Input::new(value)
+}
 
 fn uuid() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};

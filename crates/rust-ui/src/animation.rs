@@ -23,7 +23,10 @@ pub enum Easing {
     EaseOut,
     EaseInOut,
     /// Spring-style overshoot.
-    Spring { stiffness: f32, damping: f32 },
+    Spring {
+        stiffness: f32,
+        damping: f32,
+    },
 }
 
 impl Easing {
@@ -31,12 +34,15 @@ impl Easing {
     pub fn apply(self, t: f32) -> f32 {
         let t = t.clamp(0.0, 1.0);
         match self {
-            Easing::Linear     => t,
-            Easing::EaseIn     => t * t,
-            Easing::EaseOut    => 1.0 - (1.0 - t) * (1.0 - t),
-            Easing::EaseInOut  => {
-                if t < 0.5 { 2.0 * t * t }
-                else { 1.0 - (-2.0 * t + 2.0).powi(2) / 2.0 }
+            Easing::Linear => t,
+            Easing::EaseIn => t * t,
+            Easing::EaseOut => 1.0 - (1.0 - t) * (1.0 - t),
+            Easing::EaseInOut => {
+                if t < 0.5 {
+                    2.0 * t * t
+                } else {
+                    1.0 - (-2.0 * t + 2.0).powi(2) / 2.0
+                }
             }
             Easing::Spring { .. } => {
                 // Simplified exponential approximation
@@ -49,17 +55,24 @@ impl Easing {
 /// A single animating value.
 #[derive(Debug, Clone)]
 pub struct Animation {
-    pub from:        f32,
-    pub to:          f32,
-    pub elapsed:     f32,
-    pub duration:    f32,
-    pub easing:      Easing,
+    pub from: f32,
+    pub to: f32,
+    pub elapsed: f32,
+    pub duration: f32,
+    pub easing: Easing,
     pub is_complete: bool,
 }
 
 impl Animation {
     pub fn new(from: f32, to: f32, duration: f32, easing: Easing) -> Self {
-        Self { from, to, elapsed: 0.0, duration, easing, is_complete: false }
+        Self {
+            from,
+            to,
+            elapsed: 0.0,
+            duration,
+            easing,
+            is_complete: false,
+        }
     }
 
     /// Advance by `dt` seconds. Returns current interpolated value.
@@ -78,7 +91,9 @@ impl Animation {
     }
 
     pub fn current(&self) -> f32 {
-        if self.is_complete { return self.to; }
+        if self.is_complete {
+            return self.to;
+        }
         let t = (self.elapsed / self.duration).clamp(0.0, 1.0);
         let t_eased = self.easing.apply(t);
         self.from + (self.to - self.from) * t_eased
@@ -96,11 +111,13 @@ type AnimKey = (String, &'static str);
 pub struct AnimationScheduler {
     animations: HashMap<AnimKey, Animation>,
     /// Values snapshot after the last tick — widgets read from here.
-    values:     HashMap<AnimKey, f32>,
+    values: HashMap<AnimKey, f32>,
 }
 
 impl AnimationScheduler {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Start or restart an animation for a widget property.
     pub fn animate_to(
@@ -113,8 +130,11 @@ impl AnimationScheduler {
     ) {
         let key = (widget_id.into(), property);
         let from = self.values.get(&key).copied().unwrap_or(to);
-        if (from - to).abs() < 0.001 { return; } // already there
-        self.animations.insert(key, Animation::new(from, to, duration_secs, easing));
+        if (from - to).abs() < 0.001 {
+            return;
+        } // already there
+        self.animations
+            .insert(key, Animation::new(from, to, duration_secs, easing));
     }
 
     /// Set a value instantly (no animation).

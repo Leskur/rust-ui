@@ -18,8 +18,8 @@ use crate::widget::Widget;
 
 #[derive(Clone)]
 struct RasterizedSvg {
-    data:   Arc<Vec<u8>>, // RGBA8 bytes
-    width:  u32,
+    data: Arc<Vec<u8>>, // RGBA8 bytes
+    width: u32,
     height: u32,
 }
 
@@ -38,11 +38,11 @@ fn svg_cache() -> &'static Mutex<HashMap<String, CacheEntry>> {
 // ── Svg widget ────────────────────────────────────────────────────────────────
 
 pub struct Svg {
-    id:     String,
-    src:    String,
-    width:  Option<f32>,
+    id: String,
+    src: String,
+    width: Option<f32>,
     height: Option<f32>,
-    color:  Option<Color>,
+    color: Option<Color>,
 }
 
 impl Svg {
@@ -50,17 +50,26 @@ impl Svg {
         let src = src.into();
         Self::spawn_load(src.clone());
         Self {
-            id:     uuid(),
+            id: uuid(),
             src,
-            width:  None,
+            width: None,
             height: None,
-            color:  None,
+            color: None,
         }
     }
 
-    pub fn width(mut self, w: f32) -> Self { self.width = Some(w); self }
-    pub fn height(mut self, h: f32) -> Self { self.height = Some(h); self }
-    pub fn color(mut self, c: Color) -> Self { self.color = Some(c); self }
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = Some(w);
+        self
+    }
+    pub fn height(mut self, h: f32) -> Self {
+        self.height = Some(h);
+        self
+    }
+    pub fn color(mut self, c: Color) -> Self {
+        self.color = Some(c);
+        self
+    }
 
     /// Spawn a background thread to load + rasterize the SVG (if not already cached).
     fn spawn_load(src: String) {
@@ -75,7 +84,7 @@ impl Svg {
             let result = Self::load_and_rasterize(&src);
             let entry = match result {
                 Ok(svg) => CacheEntry::Loaded(svg),
-                Err(e)  => CacheEntry::Error(e),
+                Err(e) => CacheEntry::Error(e),
             };
             svg_cache().lock().unwrap().insert(src, entry);
         });
@@ -98,13 +107,12 @@ impl Svg {
         let height = size.height() as u32;
 
         // Rasterize to RGBA
-        let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)
-            .ok_or("create pixmap")?;
+        let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height).ok_or("create pixmap")?;
         let transform = resvg::tiny_skia::Transform::identity();
         resvg::render(&tree, transform, &mut pixmap.as_mut());
 
         Ok(RasterizedSvg {
-            data:   Arc::new(pixmap.data().to_vec()),
+            data: Arc::new(pixmap.data().to_vec()),
             width,
             height,
         })
@@ -116,7 +124,9 @@ impl Svg {
 }
 
 impl Widget for Svg {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn intrinsic_size(&self, _theme: &Theme) -> (f32, f32) {
         let w = self.width.unwrap_or(120.0);
@@ -133,11 +143,11 @@ impl Widget for Svg {
             Some(CacheEntry::Loaded(svg)) => {
                 renderer.draw_image(&svg.data, svg.width, svg.height, bounds);
             }
-            Some(CacheEntry::Error(_)) => {
+            Some(CacheEntry::Error(err)) => {
                 // Error placeholder: grey box with an ✕
                 renderer.fill_rect(bounds, theme.bg_elevated, crate::style::Corners::all(4.0));
                 renderer.stroke_rect(bounds, theme.border, 1.0, crate::style::Corners::all(4.0));
-                let cx = bounds.x + bounds.width  / 2.0 - 8.0;
+                let cx = bounds.x + bounds.width / 2.0 - 8.0;
                 let cy = bounds.y + bounds.height / 2.0 - 7.0;
                 let opts = crate::render::TextOptions {
                     font_size: 14.0,
@@ -145,6 +155,7 @@ impl Widget for Svg {
                     ..Default::default()
                 };
                 renderer.draw_text("✕", crate::render::Point::new(cx, cy), &opts);
+                let _ = err;
             }
             _ => {
                 // Loading placeholder: pulsing grey box

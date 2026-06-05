@@ -18,16 +18,19 @@ impl TextEngine {
     /// Measure text dimensions without drawing.
     /// Returns (width, height, ascent) where ascent is the distance from
     /// baseline to the top of the text bounding box.
-    pub fn measure(&mut self, text: &str, font_size: f32, max_width: Option<f32>) -> (f32, f32, f32) {
-        if text.is_empty() { return (0.0, font_size, font_size * 0.8); }
+    pub fn measure(
+        &mut self,
+        text: &str,
+        font_size: f32,
+        max_width: Option<f32>,
+    ) -> (f32, f32, f32) {
+        if text.is_empty() {
+            return (0.0, font_size, font_size * 0.8);
+        }
 
         let metrics = Metrics::new(font_size, font_size * 1.2);
         let mut buffer = Buffer::new(&mut self.font_system, metrics);
-        buffer.set_size(
-            &mut self.font_system,
-            max_width,
-            None,
-        );
+        buffer.set_size(&mut self.font_system, max_width, None);
         let attrs = Attrs::new();
         buffer.set_text(&mut self.font_system, text, attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut self.font_system, false);
@@ -49,12 +52,14 @@ impl TextEngine {
     /// Returns pixels with coordinates relative to the top-left of the text bounding box.
     pub fn rasterize(
         &mut self,
-        text:      &str,
+        text: &str,
         font_size: f32,
-        color:     rust_ui::color::Color,
+        color: rust_ui::color::Color,
         max_width: Option<f32>,
     ) -> (Vec<GlyphPixel>, f32, f32, f32) {
-        if text.is_empty() { return (vec![], 0.0, font_size, font_size * 0.8); }
+        if text.is_empty() {
+            return (vec![], 0.0, font_size, font_size * 0.8);
+        }
 
         let metrics = Metrics::new(font_size, font_size * 1.2);
         let mut buffer = Buffer::new(&mut self.font_system, metrics);

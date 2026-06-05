@@ -51,7 +51,7 @@ cargo run -p showcase
 
 ## 文档
 
-- [组件文档](docs/zh/components/) — Button、Input、Switch 等
+- [组件文档](docs/zh/components/) — Button、Input、Switch、Select、Dialog 等
 - [指南](docs/zh/guides/) — 主题定制、动画系统、布局
 
 ## 架构
@@ -81,7 +81,20 @@ rust-ui               核心库 — 零 GPU 依赖
         ├── Spacer     弹性间距
         ├── Stack      z 轴层叠容器
         ├── Sidebar    带分组的导航侧边栏
-        └── TabView    标签页切换
+        ├── TabView    标签页切换
+        ├── Dialog     模态对话框（焦点陷阱）
+        ├── Checkbox   多选框
+        ├── Select     下拉选择器
+        ├── Popover    锚定弹出面板
+        ├── Tooltip    悬停提示
+        ├── DropdownMenu 操作菜单
+        ├── Toast      堆叠通知（Sonner 风格）
+        ├── Progress   进度条（确定 / 不确定）
+        ├── Slider     拖拽数值
+        ├── RadioGroup 单选组
+        ├── Badge      状态标签
+        ├── Accordion  折叠面板
+        └── Tabs       标签页（可见触发器）
 
 rust-ui-wgpu          wgpu + vello + winit 渲染后端
   ├── renderer        VelloRenderer 实现 Renderer trait
@@ -113,21 +126,25 @@ rust-ui-wgpu          wgpu + vello + winit 渲染后端
 - [x] `Icon` — lucide 风格矢量图标
 - [x] `CodeBlock` — 深色背景等宽字体代码展示，支持行号
 
-### 📦 第三阶段 — 交互组件
-- [ ] 事件冒泡机制
-- [ ] `Select` — 下拉选择器
-- [ ] `Checkbox` — 多选框
-- [ ] `Radio` — 单选组
-- [ ] `Slider` — 拖拽数値
-- [ ] `Tooltip` — 悬停提示
-- [ ] `Dropdown Menu` — 右键/点击弹出菜单
-- [ ] `Dialog / Modal` — 对话框（带焦点陷阱）
+### ✅ 第三阶段 — 交互组件（大部分已完成）
+- [x] 焦点路由、Tab 循环、`draw_overlay` 弹出层
+- [x] `Select` — 下拉选择器（分组、滚动、invalid）
+- [x] `Checkbox` — 多选框
+- [x] `RadioGroup` — 单选组
+- [x] `Slider` — 拖拽数值
+- [x] `Tooltip` — 悬停提示
+- [x] `Dropdown Menu` — 操作菜单
+- [x] `Dialog / Modal` — 对话框（焦点陷阱）
+- [x] `Popover` — 锚定弹出面板
+- [ ] 完整事件冒泡机制
 
-### 📊 第四阶段 — 数据与布局
+### 📊 第四阶段 — 数据与布局（部分完成）
 - [ ] `Table` — 虚拟化行，支持万级数据流畅渲染
-- [ ] `Progress` — 进度条
-- [ ] `Toast` — 短暂通知
-- [ ] `Accordion` — 折叠展开面板
+- [x] `Progress` — 进度条
+- [x] `Toast` — 短暂通知
+- [x] `Accordion` — 折叠展开面板
+- [x] `Badge` — 状态标签
+- [x] `Tabs` — 可见标签页（shadcn 风格）
 - [ ] `Resizable` — 可拖拽调整大小的面板
 
 ### ✨ 第五阶段 — 打磨

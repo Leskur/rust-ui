@@ -24,12 +24,20 @@ pub mod animation;
 pub mod color;
 pub mod event;
 pub mod layout;
+pub mod overlay;
 pub mod render;
 pub mod style;
 pub mod widget;
 
 pub mod prelude {
     pub use crate::color::Color;
+    pub use crate::overlay::{PopoverAlign, PopoverSide};
     pub use crate::style::{Style, Theme};
-    pub use crate::widget::{button, column, row, text, Button, Column, Row, Text};
+    pub use crate::widget::{
+        accordion, badge, button, checkbox, column, dropdown_menu, popover, progress, radio_group,
+        row, select, select_entries, slider, tabs, text, toast_store, toaster, tooltip, Accordion,
+        AccordionItem, Badge, BadgeVariant, Button, Checkbox, Column, DropdownMenu, Popover,
+        Progress, RadioGroup, RadioGroupOption, Row, Select, SelectEntry, Slider, Tabs, Text,
+        ToastItem, ToastPosition, ToastStore, ToastVariant, Toaster, Tooltip,
+    };
 }

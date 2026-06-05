@@ -81,7 +81,20 @@ rust-ui               core library — zero GPU dependencies
         ├── Spacer     flexible space
         ├── Stack      layered z-axis container
         ├── Sidebar    navigation panel with groups
-        └── TabView    tabbed panels
+        ├── TabView    tabbed panels
+        ├── Dialog     modal overlay with focus trap
+        ├── Checkbox   boolean toggle
+        ├── Select     dropdown picker
+        ├── Popover    anchored floating panel
+        ├── Tooltip    hover hint
+        ├── DropdownMenu action menu
+        ├── Toast      stacked notifications (Sonner-style)
+        ├── Progress   progress bar (determinate / indeterminate)
+        ├── Slider     drag to set value
+        ├── RadioGroup single-select group
+        ├── Badge      status label
+        ├── Accordion  collapsible sections
+        └── Tabs       tab list with panels
 
 rust-ui-wgpu          wgpu + vello + winit rendering backend
   ├── renderer        VelloRenderer implements Renderer trait
@@ -113,21 +126,25 @@ Inspired by [shadcn/ui](https://ui.shadcn.com/docs/components) component set.
 - [x] `Icon` — vector icon widget (lucide-style)
 - [x] `CodeBlock` — monospace code display with line numbers
 
-### 📦 Phase 3 — Interactive components
-- [ ] `Select` — dropdown picker
-- [ ] `Checkbox` — multi-select
-- [ ] `Radio` — single-select group
-- [ ] `Slider` — drag to set value
-- [ ] `Tooltip` — hover hint
-- [ ] `Dropdown Menu` — context menu
-- [ ] `Dialog / Modal` — overlay with focus trap
-- [ ] Event bubbling mechanism
+### ✅ Phase 3 — Interactive components (mostly done)
+- [x] Focus routing, Tab cycling, `draw_overlay` for popups
+- [x] `Select` — dropdown picker (groups, scroll, invalid)
+- [x] `Checkbox` — multi-select toggle
+- [x] `RadioGroup` — single-select group
+- [x] `Slider` — drag to set value
+- [x] `Tooltip` — hover hint
+- [x] `Dropdown Menu` — action menu
+- [x] `Dialog / Modal` — overlay with focus trap
+- [x] `Popover` — anchored floating panel
+- [ ] Full event bubbling
 
-### 📊 Phase 4 — Data & layout
+### 📊 Phase 4 — Data & layout (partial)
 - [ ] `Table` — virtualized rows for large datasets
-- [ ] `Progress` — progress bar
-- [ ] `Toast` — ephemeral notification
-- [ ] `Accordion` — collapsible sections
+- [x] `Progress` — progress bar
+- [x] `Toast` — ephemeral notification
+- [x] `Accordion` — collapsible sections
+- [x] `Badge` — status label
+- [x] `Tabs` — visible tab triggers (shadcn-style)
 - [ ] `Resizable` — drag-to-resize panels
 
 ### ✨ Phase 5 — Polish

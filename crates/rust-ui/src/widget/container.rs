@@ -15,57 +15,71 @@ use crate::widget::Widget;
 ///     .padding(16.0)
 /// ```
 pub struct Container {
-    id:      String,
-    child:   Option<Box<dyn Widget>>,
-    style:   Style,
+    id: String,
+    child: Option<Box<dyn Widget>>,
+    style: Style,
 }
 
 impl Container {
     pub fn new(child: impl Widget + 'static) -> Self {
         Self {
-            id:    uuid(),
+            id: uuid(),
             child: Some(Box::new(child)),
             style: Style::new(),
         }
     }
 
     pub fn empty() -> Self {
-        Self { id: uuid(), child: None, style: Style::new() }
+        Self {
+            id: uuid(),
+            child: None,
+            style: Style::new(),
+        }
     }
 
-    pub fn style(mut self, s: Style) -> Self { self.style = s; self }
+    pub fn style(mut self, s: Style) -> Self {
+        self.style = s;
+        self
+    }
 
     pub fn bg(mut self, c: impl Into<Color>) -> Self {
-        self.style = self.style.bg(c); self
+        self.style = self.style.bg(c);
+        self
     }
 
     pub fn radius(mut self, r: f32) -> Self {
-        self.style = self.style.radius(r); self
+        self.style = self.style.radius(r);
+        self
     }
 
     pub fn padding(mut self, p: f32) -> Self {
-        self.style = self.style.padding(Edges::all(p)); self
+        self.style = self.style.padding(Edges::all(p));
+        self
     }
 
     pub fn padding_xy(mut self, x: f32, y: f32) -> Self {
-        self.style = self.style.padding_xy(x, y); self
+        self.style = self.style.padding_xy(x, y);
+        self
     }
 
     pub fn border(mut self, color: impl Into<Color>, width: f32) -> Self {
-        self.style = self.style.border_color(color).border_width(width); self
+        self.style = self.style.border_color(color).border_width(width);
+        self
     }
 }
 
 impl Widget for Container {
-    fn id(&self) -> &str { &self.id }
-    fn is_container(&self) -> bool { true }
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn is_container(&self) -> bool {
+        true
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         // Background
         if let Some(bg) = self.style.background {
-            let radius = self.style.border
-                .map(|b| b.radius)
-                .unwrap_or(Corners::ZERO);
+            let radius = self.style.border.map(|b| b.radius).unwrap_or(Corners::ZERO);
             renderer.fill_rect(bounds, bg, radius);
         }
 
@@ -79,14 +93,27 @@ impl Widget for Container {
         // Child with padding
         let padding = self.style.padding.unwrap_or(Edges::ZERO);
         let inner = Rect::new(
-            bounds.x      + padding.left,
-            bounds.y      + padding.top,
-            bounds.width  - padding.left - padding.right,
-            bounds.height - padding.top  - padding.bottom,
+            bounds.x + padding.left,
+            bounds.y + padding.top,
+            bounds.width - padding.left - padding.right,
+            bounds.height - padding.top - padding.bottom,
         );
 
         if let Some(child) = &self.child {
             child.draw(renderer, inner, theme);
+        }
+    }
+
+    fn draw_overlay(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
+        let padding = self.style.padding.unwrap_or(Edges::ZERO);
+        let inner = Rect::new(
+            bounds.x + padding.left,
+            bounds.y + padding.top,
+            bounds.width - padding.left - padding.right,
+            bounds.height - padding.top - padding.bottom,
+        );
+        if let Some(child) = &self.child {
+            child.draw_overlay(renderer, inner, theme);
         }
     }
 
@@ -102,10 +129,11 @@ impl Widget for Container {
         }
     }
 
-    fn layout_children<'a>(&'a self, bounds: Rect, theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
+    fn layout_children<'a>(&'a self, bounds: Rect, _theme: &Theme) -> Vec<(&'a dyn Widget, Rect)> {
         let padding = self.style.padding.unwrap_or(Edges::ZERO);
         let inner = Rect::new(
-            bounds.x + padding.left, bounds.y + padding.top,
+            bounds.x + padding.left,
+            bounds.y + padding.top,
             bounds.width - padding.left - padding.right,
             bounds.height - padding.top - padding.bottom,
         );
@@ -116,13 +144,32 @@ impl Widget for Container {
         }
     }
 
+    fn layout_children_mut<'a>(
+        &'a mut self,
+        bounds: Rect,
+        _theme: &Theme,
+    ) -> Vec<(&'a mut dyn Widget, Rect)> {
+        let padding = self.style.padding.unwrap_or(Edges::ZERO);
+        let inner = Rect::new(
+            bounds.x + padding.left,
+            bounds.y + padding.top,
+            bounds.width - padding.left - padding.right,
+            bounds.height - padding.top - padding.bottom,
+        );
+        if let Some(child) = &mut self.child {
+            vec![(child.as_mut() as &mut dyn Widget, inner)]
+        } else {
+            vec![]
+        }
+    }
+
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
         let padding = self.style.padding.unwrap_or(Edges::ZERO);
         let inner = Rect::new(
-            bounds.x      + padding.left,
-            bounds.y      + padding.top,
-            bounds.width  - padding.left - padding.right,
-            bounds.height - padding.top  - padding.bottom,
+            bounds.x + padding.left,
+            bounds.y + padding.top,
+            bounds.width - padding.left - padding.right,
+            bounds.height - padding.top - padding.bottom,
         );
         if let Some(child) = &mut self.child {
             child.handle_event(event, inner)

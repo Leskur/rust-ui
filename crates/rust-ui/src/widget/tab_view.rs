@@ -41,7 +41,9 @@ impl TabView {
 }
 
 impl Widget for TabView {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         // Background
@@ -50,6 +52,12 @@ impl Widget for TabView {
         // Draw only the active page
         if let Some((_, widget)) = self.pages.iter().find(|(k, _)| k == &self.active) {
             widget.draw(renderer, bounds, theme);
+        }
+    }
+
+    fn draw_overlay(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
+        if let Some((_, widget)) = self.pages.iter().find(|(k, _)| k == &self.active) {
+            widget.draw_overlay(renderer, bounds, theme);
         }
     }
 

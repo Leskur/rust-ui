@@ -5,27 +5,29 @@
 //! A software/test backend can also implement it for headless testing.
 
 use crate::color::Color;
-use crate::style::{Corners, Edges};
+use crate::style::Corners;
 
 /// Axis-aligned rectangle.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rect {
-    pub x:      f32,
-    pub y:      f32,
-    pub width:  f32,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
     pub height: f32,
 }
 
 impl Rect {
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     pub fn contains(&self, px: f32, py: f32) -> bool {
-        px >= self.x
-            && px <= self.x + self.width
-            && py >= self.y
-            && py <= self.y + self.height
+        px >= self.x && px <= self.x + self.width && py >= self.y && py <= self.y + self.height
     }
 }
 
@@ -37,27 +39,29 @@ pub struct Point {
 }
 
 impl Point {
-    pub fn new(x: f32, y: f32) -> Self { Self { x, y } }
+    pub fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
 }
 
 /// Text layout options passed to the renderer.
 #[derive(Debug, Clone)]
 pub struct TextOptions {
-    pub font_size:   f32,
-    pub color:       Color,
+    pub font_size: f32,
+    pub color: Color,
     pub font_family: Option<String>,
-    pub bold:        bool,
-    pub max_width:   Option<f32>,
+    pub bold: bool,
+    pub max_width: Option<f32>,
 }
 
 impl Default for TextOptions {
     fn default() -> Self {
         Self {
-            font_size:   14.0,
-            color:       Color::WHITE,
+            font_size: 14.0,
+            color: Color::WHITE,
             font_family: None,
-            bold:        false,
-            max_width:   None,
+            bold: false,
+            max_width: None,
         }
     }
 }

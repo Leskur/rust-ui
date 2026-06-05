@@ -15,24 +15,30 @@ use crate::widget::Widget;
 // ── Icon widget ────────────────────────────────────────────────────────────────
 
 pub struct Icon {
-    id:    String,
-    name:  String,
-    size:  f32,
+    id: String,
+    name: String,
+    size: f32,
     color: Color,
 }
 
 impl Icon {
     pub fn new(name: impl Into<String>) -> Self {
         Self {
-            id:    uuid(),
-            name:  name.into(),
-            size:  24.0,
+            id: uuid(),
+            name: name.into(),
+            size: 24.0,
             color: Color::WHITE,
         }
     }
 
-    pub fn size(mut self, s: f32) -> Self { self.size = s; self }
-    pub fn color(mut self, c: Color) -> Self { self.color = c; self }
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = s;
+        self
+    }
+    pub fn color(mut self, c: Color) -> Self {
+        self.color = c;
+        self
+    }
 
     /// Get lucide icon SVG path data by name (hardcoded common icons).
     /// Using simplified paths with only M, L, C, Z commands (no A arcs).
@@ -85,7 +91,9 @@ impl Icon {
 }
 
 impl Widget for Icon {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn intrinsic_size(&self, _theme: &Theme) -> (f32, f32) {
         (self.size, self.size)

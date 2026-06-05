@@ -14,52 +14,55 @@ use crate::widget::Widget;
 // ── CodeBlock widget ───────────────────────────────────────────────────────────
 
 pub struct CodeBlock {
-    id:          String,
-    code:        String,
-    font_size:   f32,
+    id: String,
+    code: String,
+    font_size: f32,
     line_height: f32,
-    padding:     f32,
+    padding: f32,
     line_numbers: bool,
 }
 
 impl CodeBlock {
     pub fn new(code: impl Into<String>) -> Self {
         Self {
-            id:           uuid(),
-            code:         code.into(),
-            font_size:    12.5,
-            line_height:  1.6,
-            padding:      16.0,
+            id: uuid(),
+            code: code.into(),
+            font_size: 12.5,
+            line_height: 1.6,
+            padding: 16.0,
             line_numbers: true,
         }
     }
 
-    pub fn font_size(mut self, s: f32) -> Self { self.font_size = s; self }
-    pub fn line_numbers(mut self, v: bool) -> Self { self.line_numbers = v; self }
-    pub fn no_line_numbers(mut self) -> Self { self.line_numbers = false; self }
-
-    fn lines(&self) -> Vec<&str> {
-        let code = self.code.trim_matches('\n');
-        // Detect common indentation and strip it
-        let min_indent = code.lines()
-            .filter(|l| !l.trim().is_empty())
-            .map(|l| l.len() - l.trim_start().len())
-            .min()
-            .unwrap_or(0);
-        // We store original lines and will strip during draw
-        let _ = min_indent;
-        code.lines().collect()
+    pub fn font_size(mut self, s: f32) -> Self {
+        self.font_size = s;
+        self
+    }
+    pub fn line_numbers(mut self, v: bool) -> Self {
+        self.line_numbers = v;
+        self
+    }
+    pub fn no_line_numbers(mut self) -> Self {
+        self.line_numbers = false;
+        self
     }
 
     fn stripped_lines(&self) -> Vec<String> {
         let code = self.code.trim_matches('\n');
-        let min_indent = code.lines()
+        let min_indent = code
+            .lines()
             .filter(|l| !l.trim().is_empty())
             .map(|l| l.len() - l.trim_start().len())
             .min()
             .unwrap_or(0);
         code.lines()
-            .map(|l| if l.len() >= min_indent { l[min_indent..].to_string() } else { l.to_string() })
+            .map(|l| {
+                if l.len() >= min_indent {
+                    l[min_indent..].to_string()
+                } else {
+                    l.to_string()
+                }
+            })
             .collect()
     }
 
@@ -69,7 +72,7 @@ impl CodeBlock {
 
     fn text_opts(&self, color: Color) -> TextOptions {
         TextOptions {
-            font_size:   self.font_size,
+            font_size: self.font_size,
             color,
             font_family: Some("monospace".to_string()),
             bold: false,
@@ -79,7 +82,9 @@ impl CodeBlock {
 }
 
 impl Widget for CodeBlock {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn intrinsic_size(&self, _theme: &Theme) -> (f32, f32) {
         let lines = self.stripped_lines();
@@ -89,8 +94,8 @@ impl Widget for CodeBlock {
     }
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, _theme: &Theme) {
-        let bg    = Color::hex("#13131a");
-        let fg    = Color::hex("#cdd6f4");
+        let bg = Color::hex("#13131a");
+        let fg = Color::hex("#cdd6f4");
         let gutter_fg = Color::hex("#45475a");
         let radius = Corners::all(8.0);
 

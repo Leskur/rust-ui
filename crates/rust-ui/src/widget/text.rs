@@ -14,36 +14,48 @@ use crate::widget::Widget;
 /// let label = text("Hello!").size(18.0).color(Color::WHITE).bold();
 /// ```
 pub struct Text {
-    id:      String,
+    id: String,
     content: String,
-    size:    Option<f32>,
-    color:   Option<Color>,
-    bold:    bool,
-    family:  Option<String>,
+    size: Option<f32>,
+    color: Option<Color>,
+    bold: bool,
+    family: Option<String>,
 }
 
 impl Text {
     pub fn new(content: impl Into<String>) -> Self {
         Self {
-            id:      uuid(),
+            id: uuid(),
             content: content.into(),
-            size:    None,
-            color:   None,
-            bold:    false,
-            family:  None,
+            size: None,
+            color: None,
+            bold: false,
+            family: None,
         }
     }
 
-    pub fn size(mut self, s: f32) -> Self          { self.size = Some(s); self }
-    pub fn color(mut self, c: impl Into<Color>) -> Self { self.color = Some(c.into()); self }
-    pub fn bold(mut self) -> Self                  { self.bold = true; self }
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = Some(s);
+        self
+    }
+    pub fn color(mut self, c: impl Into<Color>) -> Self {
+        self.color = Some(c.into());
+        self
+    }
+    pub fn bold(mut self) -> Self {
+        self.bold = true;
+        self
+    }
     pub fn font(mut self, family: impl Into<String>) -> Self {
-        self.family = Some(family.into()); self
+        self.family = Some(family.into());
+        self
     }
 }
 
 impl Widget for Text {
-    fn id(&self) -> &str { &self.id }
+    fn id(&self) -> &str {
+        &self.id
+    }
 
     fn intrinsic_size(&self, theme: &Theme) -> (f32, f32) {
         let fs = self.size.unwrap_or(theme.font_size_md);
@@ -54,11 +66,11 @@ impl Widget for Text {
 
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         let opts = TextOptions {
-            font_size:   self.size.unwrap_or(theme.font_size_md),
-            color:       self.color.unwrap_or(theme.fg),
+            font_size: self.size.unwrap_or(theme.font_size_md),
+            color: self.color.unwrap_or(theme.fg),
             font_family: self.family.clone(),
-            bold:        self.bold,
-            max_width:   Some(bounds.width),
+            bold: self.bold,
+            max_width: Some(bounds.width),
         };
         renderer.draw_text(
             &self.content,

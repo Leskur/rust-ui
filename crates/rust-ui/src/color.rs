@@ -10,9 +10,24 @@ pub struct Color {
 }
 
 impl Color {
-    pub const TRANSPARENT: Self = Self { r: 0.0, g: 0.0, b: 0.0, a: 0.0 };
-    pub const BLACK:       Self = Self { r: 0.0, g: 0.0, b: 0.0, a: 1.0 };
-    pub const WHITE:       Self = Self { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
+    pub const TRANSPARENT: Self = Self {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+        a: 0.0,
+    };
+    pub const BLACK: Self = Self {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+    pub const WHITE: Self = Self {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
 
     /// Construct from 8-bit RGBA components.
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
@@ -34,9 +49,7 @@ impl Color {
     /// Returns `Color::BLACK` if the string is invalid.
     pub fn hex(s: &str) -> Self {
         let s = s.trim_start_matches('#');
-        let parse = |i: usize| -> u8 {
-            u8::from_str_radix(&s[i..i + 2], 16).unwrap_or(0)
-        };
+        let parse = |i: usize| -> u8 { u8::from_str_radix(&s[i..i + 2], 16).unwrap_or(0) };
         match s.len() {
             6 => Self::rgb(parse(0), parse(2), parse(4)),
             8 => Self::rgba(parse(0), parse(2), parse(4), parse(6)),
@@ -72,15 +85,21 @@ impl Color {
 }
 
 impl Default for Color {
-    fn default() -> Self { Self::TRANSPARENT }
+    fn default() -> Self {
+        Self::TRANSPARENT
+    }
 }
 
 impl From<(f32, f32, f32)> for Color {
-    fn from((r, g, b): (f32, f32, f32)) -> Self { Self { r, g, b, a: 1.0 } }
+    fn from((r, g, b): (f32, f32, f32)) -> Self {
+        Self { r, g, b, a: 1.0 }
+    }
 }
 
 impl From<(f32, f32, f32, f32)> for Color {
-    fn from((r, g, b, a): (f32, f32, f32, f32)) -> Self { Self { r, g, b, a } }
+    fn from((r, g, b, a): (f32, f32, f32, f32)) -> Self {
+        Self { r, g, b, a }
+    }
 }
 
 #[cfg(test)]
