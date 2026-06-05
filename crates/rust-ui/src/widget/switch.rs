@@ -14,9 +14,37 @@ use crate::render::{Point, Rect, Renderer, TextOptions};
 use crate::style::{CursorStyle, Theme};
 use crate::widget::Widget;
 
-const TRACK_W: f32 = 40.0;
-const TRACK_H: f32 = 22.0;
-const THUMB_R: f32 = 8.0;
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum SwitchSize {
+    Sm,
+    Md,
+    Lg,
+}
+
+impl SwitchSize {
+    fn track_width(&self) -> f32 {
+        match self {
+            Self::Sm => 32.0,
+            Self::Md => 40.0,
+            Self::Lg => 48.0,
+        }
+    }
+    fn track_height(&self) -> f32 {
+        match self {
+            Self::Sm => 18.0,
+            Self::Md => 22.0,
+            Self::Lg => 26.0,
+        }
+    }
+    fn thumb_radius(&self) -> f32 {
+        match self {
+            Self::Sm => 6.0,
+            Self::Md => 8.0,
+            Self::Lg => 10.0,
+        }
+    }
+}
+
 const ANIM_DUR: f32 = 0.18; // seconds
 
 pub struct Switch {
@@ -24,6 +52,8 @@ pub struct Switch {
     label:     String,
     on:        bool,
     hovered:   bool,
+    disabled:  bool,
+    size:      SwitchSize,
     on_change: Option<Box<dyn Fn(bool)>>,
 }
 
@@ -34,12 +64,24 @@ impl Switch {
             label:     label.into(),
             on,
             hovered:   false,
+            disabled:  false,
+            size:      SwitchSize::Md,
             on_change: None,
         }
     }
 
     pub fn on_change(mut self, f: impl Fn(bool) + 'static) -> Self {
         self.on_change = Some(Box::new(f));
+        self
+    }
+
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+
+    pub fn size(mut self, size: SwitchSize) -> Self {
+        self.size = size;
         self
     }
 
@@ -58,38 +100,47 @@ impl Switch {
     ) {
         let progress = scheduler.get(&self.id, "progress").unwrap_or(if self.on { 1.0 } else { 0.0 });
 
-        // Track background: lerp grey → accent
-        let off_color = theme.bg_elevated;
-        let track_color = off_color.lerp(theme.accent, progress);
+        let track_w = self.size.track_width();
+        let track_h = self.size.track_height();
+        let thumb_r = self.size.thumb_radius();
 
-        let track_rect = Rect::new(bounds.x, bounds.y + (bounds.height - TRACK_H) / 2.0, TRACK_W, TRACK_H);
+        // Track background: lerp grey → accent
+        let off_color = if self.disabled { theme.border } else { theme.bg_elevated };
+        let on_color = if self.disabled { theme.border } else { theme.accent };
+        let track_color = off_color.lerp(on_color, progress);
+
+        let track_rect = Rect::new(bounds.x, bounds.y + (bounds.height - track_h) / 2.0, track_w, track_h);
         renderer.fill_rect(
             track_rect,
             track_color,
-            crate::style::Corners::all(TRACK_H / 2.0),
+            crate::style::Corners::all(track_h / 2.0),
         );
 
         // Thumb position
-        let x_off = bounds.x + TRACK_H / 2.0;
-        let x_on  = bounds.x + TRACK_W - TRACK_H / 2.0;
+        let x_off = bounds.x + track_h / 2.0;
+        let x_on  = bounds.x + track_w - track_h / 2.0;
         let thumb_cx = x_off + (x_on - x_off) * progress;
         let thumb_cy = bounds.y + bounds.height / 2.0;
 
         // Shadow
-        renderer.fill_circle(
-            Point::new(thumb_cx, thumb_cy),
-            THUMB_R + 1.5,
-            Color { r: 0.0, g: 0.0, b: 0.0, a: 0.15 },
-        );
+        if !self.disabled {
+            renderer.fill_circle(
+                Point::new(thumb_cx, thumb_cy),
+                thumb_r + 1.5,
+                Color { r: 0.0, g: 0.0, b: 0.0, a: 0.15 },
+            );
+        }
         // Thumb
-        renderer.fill_circle(Point::new(thumb_cx, thumb_cy), THUMB_R, Color::WHITE);
+        let thumb_color = if self.disabled { theme.fg_muted } else { Color::WHITE };
+        renderer.fill_circle(Point::new(thumb_cx, thumb_cy), thumb_r, thumb_color);
 
         // Label
         if !self.label.is_empty() {
-            let text_x = bounds.x + TRACK_W + 10.0;
+            let text_x = bounds.x + track_w + 10.0;
+            let label_color = if self.disabled { theme.fg_muted } else { if self.on { theme.fg } else { theme.fg_muted } };
             let opts = TextOptions {
                 font_size: theme.font_size_md,
-                color: if self.on { theme.fg } else { theme.fg_muted },
+                color: label_color,
                 ..Default::default()
             };
             renderer.draw_text(
@@ -107,18 +158,28 @@ impl Widget for Switch {
     fn draw(&self, renderer: &mut dyn Renderer, bounds: Rect, theme: &Theme) {
         // Fallback draw without scheduler (instant, no animation)
         let progress = if self.on { 1.0_f32 } else { 0.0 };
-        let track_color = theme.bg_elevated.lerp(theme.accent, progress);
-        let track_rect = Rect::new(bounds.x, bounds.y + (bounds.height - TRACK_H) / 2.0, TRACK_W, TRACK_H);
-        renderer.fill_rect(track_rect, track_color, crate::style::Corners::all(TRACK_H / 2.0));
+        let track_w = self.size.track_width();
+        let track_h = self.size.track_height();
+        let thumb_r = self.size.thumb_radius();
 
-        let x_off = bounds.x + TRACK_H / 2.0;
-        let x_on  = bounds.x + TRACK_W - TRACK_H / 2.0;
+        let off_color = if self.disabled { theme.border } else { theme.bg_elevated };
+        let on_color = if self.disabled { theme.border } else { theme.accent };
+        let track_color = off_color.lerp(on_color, progress);
+        let track_rect = Rect::new(bounds.x, bounds.y + (bounds.height - track_h) / 2.0, track_w, track_h);
+        renderer.fill_rect(track_rect, track_color, crate::style::Corners::all(track_h / 2.0));
+
+        let x_off = bounds.x + track_h / 2.0;
+        let x_on  = bounds.x + track_w - track_h / 2.0;
         let thumb_cx = x_off + (x_on - x_off) * progress;
         let thumb_cy = bounds.y + bounds.height / 2.0;
-        renderer.fill_circle(Point::new(thumb_cx, thumb_cy), THUMB_R, Color::WHITE);
+        let thumb_color = if self.disabled { theme.fg_muted } else { Color::WHITE };
+        renderer.fill_circle(Point::new(thumb_cx, thumb_cy), thumb_r, thumb_color);
     }
 
     fn handle_event(&mut self, event: &Event, bounds: Rect) -> EventStatus {
+        if self.disabled {
+            return EventStatus::Ignored;
+        }
         match event {
             Event::MouseMove { pos } => {
                 self.hovered = bounds.contains(pos.x, pos.y);
@@ -138,7 +199,13 @@ impl Widget for Switch {
     }
 
     fn cursor_at(&self, pos: (f32, f32), bounds: Rect) -> CursorStyle {
-        if bounds.contains(pos.0, pos.1) { CursorStyle::Pointer } else { CursorStyle::Default }
+        if self.disabled {
+            CursorStyle::Default
+        } else if bounds.contains(pos.0, pos.1) {
+            CursorStyle::Pointer
+        } else {
+            CursorStyle::Default
+        }
     }
 }
 

@@ -19,7 +19,7 @@ pub use container::{container, Container};
 pub use input::{input, Input, InputSize};
 pub use row::{row, Row};
 pub use sidebar::{sidebar, sidebar_group, sidebar_item, Sidebar, SidebarGroup, SidebarItem};
-pub use switch::{switch, Switch};
+pub use switch::{switch, Switch, SwitchSize};
 pub use tab_view::{tab_view, TabView};
 pub use text::{text, Text};
 
